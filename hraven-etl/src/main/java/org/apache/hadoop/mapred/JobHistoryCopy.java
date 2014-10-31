@@ -346,7 +346,7 @@ public class JobHistoryCopy {
     jtConf = conf;
 
     // queue and job level security is enabled on the mapreduce cluster or not
-    aclsEnabled = conf.getBoolean(JobConf.MR_ACLS_ENABLED, false);
+    aclsEnabled = conf.getBoolean("JobConf.MR_ACLS_ENABLED", false);
 
     // initialize the file manager
     fileManager = new JobHistoryFilesManager(conf, jobTracker);
@@ -2147,6 +2147,7 @@ public class JobHistoryCopy {
    * @return the taskLogsUrl. null if http-port or tracker-name or
    *         task-attempt-id are unavailable.
    */
+  /*
   public static String getTaskLogsUrl(JobHistoryCopy.TaskAttempt attempt) {
     if (attempt.get(JobHistoryKeys.HTTP_PORT).equals("")
         || attempt.get(JobHistoryKeys.TRACKER_NAME).equals("")
@@ -2160,4 +2161,5 @@ public class JobHistoryCopy {
     return TaskLogServlet.getTaskLogUrl(taskTrackerName, attempt
         .get(JobHistoryKeys.HTTP_PORT), attempt.get(JobHistoryKeys.TASK_ATTEMPT_ID));
   }
+  */
 }
