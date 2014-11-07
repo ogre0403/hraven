@@ -487,9 +487,12 @@ public class ProcessRecordService {
     Path processFile = new Path(outputPath, processFileName);
 
     boolean success = fs.rename(initialProcessFile, processFile);
+
     if (!success) {
       throw new ProcessingException("Unable to move processing file "
           + initialProcessFile + " to " + processFile);
+    }else{
+        LOG.info("move processing file " + initialProcessFile + " to " + processFile);
     }
     return processFile;
   }

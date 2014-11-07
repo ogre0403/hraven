@@ -16,19 +16,18 @@
 #
 
 # Run on the daemon node per specific cluster
-# This script runs on the HBase cluster
-# Usage ./jobFileProcessor.sh [hadoopconfdir]
-#   [schedulerpoolname] [historyprocessingdir] [cluster] [threads] [batchsize] [machinetype] [costfile]
-# a sample cost file can be found in the conf dir as sampleCostDetails.properties
+# Usage ./jobFilePreprocessor.sh [hadoopconfdir]
+#   [historyrawdir] [historyprocessingdir] [cluster] [batchsize]
 
-if [ $# -ne 4 ]
+if [ $# -ne 3 ]
 then
-  echo "Usage: `basename $0` [hbaseconfdir] [schedulerpoolname] [historyprocessingdir] [cluster] [threads] [batchsize] [machinetype]"
+  echo "Usage: `basename $0` [hadoop_conf_dir] [history_dir] [cluster]"
   exit 1
 fi
 
 source $(dirname $0)/hraven-etl-env.sh
 
+export HADOOP_HEAPSIZE=4000
 myscriptname=$(basename "$0" .sh)
 stopfile=$HRAVEN_PID_DIR/$myscriptname.stop
 
@@ -40,5 +39,4 @@ fi
 create_pidfile $HRAVEN_PID_DIR
 trap 'cleanup_pidfile_and_exit $HRAVEN_PID_DIR' INT TERM EXIT
 
-#hadoop --config $1 jar $hravenEtlJar com.twitter.hraven.etl.JobFileProcessor -libjars=$LIBJARS -Dmapred.fairscheduler.pool=$2 -d -p $3 -c $4 -t $5 -b $6 -m $7
-hadoop --config $1 jar $hravenEtlJar com.twitter.hraven.etl.JobFileProcessor -libjars=$LIBJARS -d -c $2 -m $3 -zf $4
+hadoop --config $1 jar $hravenEtlJar com.twitter.hraven.etl.JobCostServer -libjars=$LIBJARS -d  -i $2 -c $3
