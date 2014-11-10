@@ -69,6 +69,14 @@ public class JobHistoryRawService {
     rawTable = new HTable(myHBaseConf, Constants.HISTORY_RAW_TABLE_BYTES);
   }
 
+  public ResultScanner getHistoryRawTableScans(String cluster, String minJobId, String maxJobId) throws IOException {
+      ResultScanner scanner = null;
+      Scan scan = getHistoryRawTableScan(cluster, minJobId, maxJobId, false, true);
+      scanner = rawTable.getScanner(scan);
+      return scanner;
+  }
+
+
   /**
    * Given a min and max jobId, get a {@link Scan} to go through all the records
    * loaded in the {@link Constants#HISTORY_RAW_TABLE}, get all the rowkeys and

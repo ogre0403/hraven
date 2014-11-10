@@ -15,10 +15,14 @@ limitations under the License.
 */
 package com.twitter.hraven.etl;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
-import com.twitter.hraven.datasource.JobHistoryRawService;
+import com.twitter.hraven.*;
+import com.twitter.hraven.datasource.*;
 import com.twitter.hraven.util.BatchUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,11 +35,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -43,9 +47,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-
-import com.twitter.hraven.Constants;
-import com.twitter.hraven.datasource.ProcessingException;
 
 /**
  * Command line tool that can be run on a periodic basis (like daily, hourly, or
@@ -87,14 +88,21 @@ public class JobCostServer extends Configured implements Tool {
    * Name of the job conf property used to pass the output directory to the
    * mappers.
    */
-  public final static String JOB_RECORD_KEY_LABEL = NAME + ".job.record.key";
+//  public final static String JOB_RECORD_KEY_LABEL = NAME + ".job.record.key";
 
   private long keyCount = 0;
   private Configuration hbaseConf;
   private FileSystem hdfs;
   private JobHistoryRawService rawService = null;
+  private JobHistoryByIdService jobHistoryByIdService = null;
+  private AppVersionService appVersionService = null;
   private HTable rawTable = null;
+  private HTable jobTable = null;
+  private HTable taskTable = null;
   private HashMap<JobFile,FileStatus> jobstatusmap = null;
+  private static JobKeyConverter jobKeyConv = new JobKeyConverter();
+  private static String costdetail = "sampleCostDetails.properties";
+
   /**
    * Default constructor.
    */
@@ -191,20 +199,31 @@ public class JobCostServer extends Configured implements Tool {
     // accept, next run will pick up the new incoming files.
     long processingStartMillis = System.currentTimeMillis();
 
-    hbaseConf = HBaseConfiguration.create(getConf());
+
 
     // Grab input args and allow for -Dxyz style arguments
+    hbaseConf = HBaseConfiguration.create(getConf());
+    hbaseConf.setInt("hbase.client.keyvalue.maxsize", 0);
+
     String[] otherArgs = new GenericOptionsParser(hbaseConf, args).getRemainingArgs();
 
     // Grab the arguments we're looking for.
     CommandLine commandLine = parseArgs(otherArgs);
+    // Grab the cluster argument
+    String cluster = commandLine.getOptionValue("c");
+      hbaseConf.setStrings(Constants.CLUSTER_JOB_CONF_KEY, cluster);
+    LOG.info("cluster=" + cluster);
+
 
     // Output should be an hdfs path.
     hdfs = FileSystem.get(hbaseConf);
     rawService = new JobHistoryRawService(hbaseConf);
+    appVersionService = new AppVersionService(hbaseConf);
+    jobHistoryByIdService = new JobHistoryByIdService(hbaseConf);
     rawTable = new HTable(hbaseConf, Constants.HISTORY_RAW_TABLE_BYTES);
+    jobTable = new HTable(hbaseConf,Constants.HISTORY_TABLE_BYTES);
+    taskTable = new HTable(hbaseConf,Constants.HISTORY_TASK_TABLE_BYTES);
     jobstatusmap = new HashMap<JobFile, FileStatus>();
-
 
     // Grab the input path argument
     String input;
@@ -244,9 +263,7 @@ public class JobCostServer extends Configured implements Tool {
           + inputFileStatus.getPath().getName());
     }
 
-    // Grab the cluster argument
-    String cluster = commandLine.getOptionValue("c");
-    LOG.info("cluster=" + cluster);
+
 
     /**
      * Grab the size of huge files to be moved argument
@@ -317,19 +334,22 @@ public class JobCostServer extends Configured implements Tool {
       FileStatus[] jobFileStatusses = FileLister.getListFilesToProcess(maxFileSize, true,
             hdfs, inputPath, jobFileModifiedRangePathFilter);
 
-        if (jobFileStatusses.length < 1){
-            LOG.info("No newly job, return");
-            return 0;
-        }
+      if (jobFileStatusses.length < 1){
+          LOG.info("No newly job, return");
+          return 0;
+      }
       LOG.info("Sorting " + jobFileStatusses.length + " job files.");
 
       Arrays.sort(jobFileStatusses, new FileStatusModificationComparator());
 
+      MinMaxJobFileTracker minMaxJobFileTracker = new MinMaxJobFileTracker();
       int batchCount = BatchUtil.getBatchCount(jobFileStatusses.length, batchSize);
       for (int b = 0; b < batchCount; b++) {
 
           LOG.info("=============   Pre-Process Start ===========");
           ProcessRecord processRecord = processBatch(jobFileStatusses, b,batchSize,processRecordService, cluster);
+          minMaxJobFileTracker.track(processRecord.getMinJobId());
+          minMaxJobFileTracker.track(processRecord.getMaxJobId());
           LOG.info("=============   Pre-Process End ===========");
 
           LOG.info("=============   Load Raw history Start  ==============");
@@ -340,14 +360,16 @@ public class JobCostServer extends Configured implements Tool {
               loadRawHistory(pairs.getKey(), pairs.getValue(), puts);
           }
           rawTable.put(puts);
+          rawTable.flushCommits();
           processRecordService.setProcessState(processRecord, ProcessState.LOADED);
           LOG.info("=============   Load Raw history End  ==============");
 
-          // loadJobTask();
+
 
           jobstatusmap.clear();
       }
 
+      loadJobTaskDetail(cluster, minMaxJobFileTracker.getMinJobId(), minMaxJobFileTracker.getMaxJobId());
 
 
     } finally {
@@ -355,19 +377,194 @@ public class JobCostServer extends Configured implements Tool {
       rawTable.close();
     }
 
-    Statistics statistics = FileSystem.getStatistics(inputPath.toUri()
-        .getScheme(), hdfs.getClass());
-    if (statistics != null) {
-      LOG.info("HDFS bytes read: " + statistics.getBytesRead());
-      LOG.info("HDFS bytes written: " + statistics.getBytesWritten());
-      LOG.info("HDFS read ops: " + statistics.getReadOps());
-      LOG.info("HDFS large read ops: " + statistics.getLargeReadOps());
-      LOG.info("HDFS write ops: " + statistics.getWriteOps());
-    }
-
     // Return the status
     return success ? 0 : 1;
   }
+
+    private void loadJobTaskDetail(String cluster, String minJobId, String maxJobId) throws IOException, RowKeyParseException {
+        ResultScanner scanner = rawService.getHistoryRawTableScans(cluster, minJobId,maxJobId);
+
+        List<Put> jobputs = new LinkedList<Put>();
+        List<Put> taskputs = new LinkedList<Put>();
+        for (Result result : scanner) {
+            QualifiedJobId qualifiedJobId = null;
+            jobputs.clear();
+            taskputs.clear();
+            Configuration jobConf;
+            byte[] jobhistoryraw;
+            byte[] historyFileContents;
+            try {
+                qualifiedJobId = rawService.getQualifiedJobIdFromResult(result);
+                jobConf = rawService.createConfigurationFromResult(result);
+                jobhistoryraw = rawService.getJobHistoryRawFromResult(result);
+                long submitTimeMillis = JobHistoryFileParserBase.getSubmitTimeMillisFromJobHistory(jobhistoryraw);
+
+                if (submitTimeMillis == 0L) {
+                    LOG.info("NOTE: Since submitTimeMillis from job history is 0, now attempting to "
+                            + "approximate job start time based on last modification time from the raw table");
+                    submitTimeMillis = rawService.getApproxSubmitTime(result);
+                }
+                Put submitTimePut = rawService.getJobSubmitTimePut(result.getRow(), submitTimeMillis);
+
+                rawTable.put(submitTimePut);
+
+                JobDesc jobDesc = JobDescFactory.createJobDesc(qualifiedJobId, submitTimeMillis, jobConf);
+                JobKey jobKey = new JobKey(jobDesc);
+
+                LOG.info("JobDesc (" + keyCount + "): " + jobDesc + " submitTimeMillis: " + submitTimeMillis);
+
+                List<Put> puts = JobHistoryService.getHbasePuts(jobDesc, jobConf);
+                LOG.info("Writing " + puts.size() + " JobConf puts to "  + Constants.HISTORY_TABLE);
+                jobputs.addAll(puts);
+
+                LOG.info("Writing secondary indexes");
+                jobHistoryByIdService.writeIndexes(jobKey);
+                appVersionService.addVersion(jobDesc.getCluster(), jobDesc.getUserName(),
+                        jobDesc.getAppId(), jobDesc.getVersion(), jobDesc.getRunId());
+
+                KeyValue keyValue = result.getColumnLatest(Constants.RAW_FAM_BYTES,  Constants.JOBHISTORY_COL_BYTES);
+
+
+                if (keyValue == null) {
+                    throw new MissingColumnInResultException(Constants.RAW_FAM_BYTES,
+                            Constants.JOBHISTORY_COL_BYTES);
+                } else {
+                    historyFileContents = keyValue.getValue();
+                }
+                JobHistoryFileParser historyFileParser = JobHistoryFileParserFactory.createJobHistoryFileParser(historyFileContents, jobConf);
+
+                historyFileParser.parse(historyFileContents, jobKey);
+
+
+                puts = historyFileParser.getJobPuts();
+                if (puts == null) {
+                    throw new ProcessingException(" Unable to get job puts for this record!" + jobKey);
+                } else{
+                    LOG.info("Writing " + puts.size() + " Job puts to "  + Constants.HISTORY_TABLE);
+                    jobputs.addAll(puts);
+                }
+
+                puts = historyFileParser.getTaskPuts();
+                if (puts == null) {
+                    throw new ProcessingException(" Unable to get task puts for this record!" + jobKey);
+                }else {
+                    LOG.info("Writing " + puts.size() + " task puts to " + Constants.HISTORY_TASK_TABLE);
+                    taskputs.addAll(puts);
+                }
+
+
+
+                /** post processing steps on job puts and job conf puts */
+                Long mbMillis = historyFileParser.getMegaByteMillis();
+                if (mbMillis == null) {
+                    throw new ProcessingException(" Unable to get megabyte millis calculation for this record!" + jobKey);
+                }
+
+                Put mbPut = getMegaByteMillisPut(mbMillis, jobKey);
+                LOG.info("Writing mega byte millis  puts to " + Constants.HISTORY_TABLE);
+                jobputs.add(mbPut);
+
+                /** post processing steps to get cost of the job */
+                Double jobCost = getJobCost(mbMillis, "default");
+                if (jobCost == null) {
+                    throw new ProcessingException(" Unable to get job cost calculation for this record!"
+                            + jobKey);
+                }
+                Put jobCostPut = getJobCostPut(jobCost, jobKey);
+                LOG.info("Writing jobCost puts to " + Constants.HISTORY_TABLE);
+                jobputs.add(jobCostPut);
+
+
+                jobTable.put(jobputs);
+                taskTable.put(taskputs);
+
+
+            }catch (RowKeyParseException rkpe) {
+                LOG.error("Failed to process record "
+                    + (qualifiedJobId != null ? qualifiedJobId.toString() : ""), rkpe);
+            } catch (MissingColumnInResultException mcire) {
+                LOG.error("Failed to process record "
+                    + (qualifiedJobId != null ? qualifiedJobId.toString() : ""), mcire);
+            } catch (ProcessingException pe) {
+                LOG.error("Failed to process record "
+                    + (qualifiedJobId != null ? qualifiedJobId.toString() : ""), pe);
+            } catch (IllegalArgumentException iae) {
+                LOG.error("Failed to process record "
+                    + (qualifiedJobId != null ? qualifiedJobId.toString() : ""),iae);
+            }
+        }
+
+    }
+
+    private Put getJobCostPut(Double jobCost, JobKey jobKey) {
+        Put pJobCost = new Put(jobKeyConv.toBytes(jobKey));
+        pJobCost.add(Constants.INFO_FAM_BYTES, Constants.JOBCOST_BYTES, Bytes.toBytes(jobCost));
+        return pJobCost;
+    }
+
+
+    private Double getJobCost(Long mbMillis, String machineType) {
+        Double computeTco = 0.0;
+        Long machineMemory = 0L;
+        Properties prop = null;
+        LOG.debug(" machine type " + machineType);
+        prop = loadCostProperties(costdetail);
+
+
+        if (prop != null) {
+            String computeTcoStr = prop.getProperty(machineType + ".computecost");
+            try {
+                computeTco = Double.parseDouble(computeTcoStr);
+            } catch (NumberFormatException nfe) {
+                LOG.error("error in conversion to long for compute tco " + computeTcoStr
+                        + " using default value of 0");
+            }
+            String machineMemStr = prop.getProperty(machineType + ".machinememory");
+            try {
+                machineMemory = Long.parseLong(machineMemStr);
+            } catch (NumberFormatException nfe) {
+                LOG.error("error in conversion to long for machine memory  " + machineMemStr
+                        + " using default value of 0");
+            }
+        } else {
+            LOG.error("Could not load properties file, using defaults");
+        }
+
+        Double jobCost = JobHistoryFileParserBase.calculateJobCost(mbMillis, computeTco, machineMemory);
+        LOG.info("from cost properties file, jobCost is " + jobCost + " based on compute tco: "
+                + computeTco + " machine memory: " + machineMemory + " for machine type " + machineType);
+        return jobCost;
+    }
+
+    Properties loadCostProperties(String costDetailsPath) {
+        Properties prop = new Properties();
+        InputStream inp = this.getClass().getClassLoader().getResourceAsStream(costDetailsPath);
+        try {
+            if (inp == null){
+                return null;
+            }
+            prop.load(inp);
+            return prop;
+        }catch (IOException e) {
+            LOG.error("error loading properties, using default values");
+            return null;
+        } finally {
+            if (inp != null) {
+                try {
+                    inp.close();
+                } catch (IOException ignore) {
+                    // do nothing
+                }
+            }
+        }
+    }
+
+
+    private Put getMegaByteMillisPut(Long mbMillis, JobKey jobKey) {
+        Put pMb = new Put(jobKeyConv.toBytes(jobKey));
+        pMb.add(Constants.INFO_FAM_BYTES, Constants.MEGABYTEMILLIS_BYTES, Bytes.toBytes(mbMillis));
+        return pMb;
+    }
 
     private byte[] getRowKeyBytes(JobFile jobFile) {
         String cluster = hbaseConf.get(Constants.CLUSTER_JOB_CONF_KEY);

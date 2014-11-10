@@ -32,7 +32,7 @@ export HBASE_CLASSPATH=`hbase classpath`
 
 # export HRAVEN_CLASSPATH=$HBASE_CLASSPATH
 # export HRAVEN_CLASSPATH=`hbase --config /etc/hbase/conf-hbase-tst-dc1 classpath`
-export HRAVEN_CLASSPATH=
+export HRAVEN_CLASSPATH=`hbase classpath`
 
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export HRAVEN_HEAPSIZE=1000

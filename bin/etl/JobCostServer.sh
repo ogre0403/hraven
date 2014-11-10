@@ -19,9 +19,9 @@
 # Usage ./jobFilePreprocessor.sh [hadoopconfdir]
 #   [historyrawdir] [historyprocessingdir] [cluster] [batchsize]
 
-if [ $# -ne 3 ]
+if [ $# -ne 2 ]
 then
-  echo "Usage: `basename $0` [hadoop_conf_dir] [history_dir] [cluster]"
+  echo "Usage: `basename $0` [history_dir] [cluster]"
   exit 1
 fi
 
@@ -39,4 +39,10 @@ fi
 create_pidfile $HRAVEN_PID_DIR
 trap 'cleanup_pidfile_and_exit $HRAVEN_PID_DIR' INT TERM EXIT
 
-hadoop --config $1 jar $hravenEtlJar com.twitter.hraven.etl.JobCostServer -libjars=$LIBJARS -d  -i $2 -c $3
+#hadoop --config $1 jar $hravenEtlJar com.twitter.hraven.etl.JobCostServer -libjars=$LIBJARS -d  -i $2 -c $3
+etl=`dirname "$0"`
+etl=`cd "$etl">/dev/null; pwd`
+CLASSPATH=`hbase classpath`
+HRAVEN_HOME=${HRAVEN_HOME:-$etl/../../}
+
+java -cp $HRAVEN_HOME/conf/:$CLASSPATH:$hravenEtlJar:$LIBJARS  com.twitter.hraven.etl.JobCostServer -d  -i $1 -c $2
