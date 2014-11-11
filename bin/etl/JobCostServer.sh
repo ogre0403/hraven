@@ -39,10 +39,13 @@ fi
 create_pidfile $HRAVEN_PID_DIR
 trap 'cleanup_pidfile_and_exit $HRAVEN_PID_DIR' INT TERM EXIT
 
-#hadoop --config $1 jar $hravenEtlJar com.twitter.hraven.etl.JobCostServer -libjars=$LIBJARS -d  -i $2 -c $3
 etl=`dirname "$0"`
 etl=`cd "$etl">/dev/null; pwd`
 CLASSPATH=`hbase classpath`
 HRAVEN_HOME=${HRAVEN_HOME:-$etl/../../}
 
-java -cp $HRAVEN_HOME/conf/:$CLASSPATH:$hravenEtlJar:$LIBJARS  org.nchc.history.JobCostServer -d  -i $1 -c $2
+# Add libs to CLASSPATH
+for f in $HRAVEN_HOME/lib/*.jar; do
+    CLASSPATH=$f:${CLASSPATH};
+done
+java -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.JobCostServer -d  -i $1 -c $2

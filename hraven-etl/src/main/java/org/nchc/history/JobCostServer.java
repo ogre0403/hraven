@@ -94,7 +94,7 @@
 
       private static String cluster;
       private static Path inputPath;
-      private static int batchSize = DEFAULT_BATCH_SIZE;;
+      private static int batchSize = DEFAULT_BATCH_SIZE;
       private static long maxFileSize = DEFAULT_RAW_FILE_SIZE_LIMIT;
       /**
        * Default constructor.
@@ -102,11 +102,6 @@
       public JobCostServer() {
       }
 
-      /**
-       * Used for injecting confs while unit testing
-       *
-       * @param conf
-       */
       public JobCostServer(Configuration conf) {
         super(conf);
       }
@@ -185,7 +180,7 @@
         try {
           commandLine = parser.parse(options, args);
         } catch (Exception e) {
-          System.err.println("ERROR: " + e.getMessage() + "\n");
+          LOG.error("ERROR: " + e.getMessage() + "\n");
           HelpFormatter formatter = new HelpFormatter();
           formatter.printHelp(NAME + " ", options, true);
           System.exit(-1);
@@ -275,58 +270,51 @@
               macType = commandLine.getOptionValue("t");
           }
           LOG.info("machine type = " + macType);
-
       }
 
       @Override
       public int run(String[] args) throws Exception {
 
+        LOG.info("start separate thread to parse history file");
         getArgValue(args);
-        ProcessRecordService processRecordService = new ProcessRecordService(hbaseConf);
 
-        boolean success = true;
-        try {
+        while(true) {
+            LOG.debug("NEW history parse iteration....");
+            ProcessRecordService processRecordService = new ProcessRecordService(hbaseConf);
+            FileStatus[] jobFileStatusses = findProcessFiles(processRecordService);
+            if (jobFileStatusses.length < 1) {
+                LOG.info("No newly job, return");
+                //TODO: sleep interval from configuration
+                Thread.sleep(60000);
+                continue;
+            }
+            LOG.info("Sorting " + jobFileStatusses.length + " job files.");
+            Arrays.sort(jobFileStatusses, new FileStatusModificationComparator());
+            MinMaxJobFileTracker minMaxJobFileTracker = new MinMaxJobFileTracker();
+            int batchCount = BatchUtil.getBatchCount(jobFileStatusses.length, batchSize);
+            for (int b = 0; b < batchCount; b++) {
+                LOG.debug("=============   Pre-Process Start ===========");
+                ProcessRecord processRecord = processBatch(jobFileStatusses, b, batchSize, processRecordService, cluster);
+                minMaxJobFileTracker.track(processRecord.getMinJobId());
+                minMaxJobFileTracker.track(processRecord.getMaxJobId());
+                LOG.debug("=============   Pre-Process End ===========");
 
-          FileStatus[] jobFileStatusses = findProcessFiles(processRecordService);
-          if (jobFileStatusses.length < 1){
-              LOG.info("No newly job, return");
-              return 0;
-          }
-          LOG.info("Sorting " + jobFileStatusses.length + " job files.");
-          Arrays.sort(jobFileStatusses, new FileStatusModificationComparator());
-          MinMaxJobFileTracker minMaxJobFileTracker = new MinMaxJobFileTracker();
-          int batchCount = BatchUtil.getBatchCount(jobFileStatusses.length, batchSize);
-          for (int b = 0; b < batchCount; b++) {
-              LOG.info("=============   Pre-Process Start ===========");
-              ProcessRecord processRecord = processBatch(jobFileStatusses, b,batchSize,processRecordService, cluster);
-              minMaxJobFileTracker.track(processRecord.getMinJobId());
-              minMaxJobFileTracker.track(processRecord.getMaxJobId());
-              LOG.info("=============   Pre-Process End ===========");
-
-              LOG.info("=============   Load Raw history Start  ==============");
-              Iterator it = jobstatusmap.entrySet().iterator();
-              List<Put> puts = new LinkedList<Put>();
-              while (it.hasNext()) {
-                  Map.Entry<JobFile,FileStatus> pairs = (Map.Entry)it.next();
-                  loadRawHistory(pairs.getKey(), pairs.getValue(), puts);
-              }
-              rawTable.put(puts);
-              rawTable.flushCommits();
-              processRecordService.setProcessState(processRecord, ProcessState.LOADED);
-              LOG.info("=============   Load Raw history End  ==============");
-              jobstatusmap.clear();
-          }
-
-          loadJobTaskDetail(cluster, minMaxJobFileTracker.getMinJobId(), minMaxJobFileTracker.getMaxJobId());
-
-
-        } finally {
-          processRecordService.close();
-          rawTable.close();
+                LOG.debug("=============   Load Raw history Start  ==============");
+                Iterator it = jobstatusmap.entrySet().iterator();
+                List<Put> puts = new LinkedList<Put>();
+                while (it.hasNext()) {
+                    Map.Entry<JobFile, FileStatus> pairs = (Map.Entry) it.next();
+                    loadRawHistory(pairs.getKey(), pairs.getValue(), puts);
+                }
+                rawTable.put(puts);
+                rawTable.flushCommits();
+                processRecordService.setProcessState(processRecord, ProcessState.LOADED);
+                LOG.debug("=============   Load Raw history End  ==============");
+                jobstatusmap.clear();
+            }
+            loadJobTaskDetail(cluster, minMaxJobFileTracker.getMinJobId(), minMaxJobFileTracker.getMaxJobId());
+            Thread.sleep(60000);
         }
-
-        // Return the status
-        return success ? 0 : 1;
       }
 
         private FileStatus[] findProcessFiles(ProcessRecordService processRecordService) throws IOException {
@@ -334,12 +322,10 @@
             long processingStartMillis = System.currentTimeMillis();
 
             // Figure out where we last left off (if anywhere at all)
-            ProcessRecord lastProcessRecord = null;
+            ProcessRecord lastProcessRecord;
 
-            //if (!forceAllFiles) {
             lastProcessRecord = processRecordService
                     .getLastSuccessfulProcessRecord(cluster);
-            //}
 
             long minModificationTimeMillis = 0;
             if (lastProcessRecord != null) {
@@ -518,7 +504,6 @@
                     LOG.warn("Skipping Key: " + jobFile.getFilename());
                 }
             } else {
-                // TODO: have better error handling.
                 LOG.warn("Unable to find file: " + fileStatus.getPath());
             }
         }
@@ -561,15 +546,18 @@
             return processRecord;
         }
 
-      /**
-       * DoIt.
-       *
-       * @param args
-       *          the arguments to do it with
-       * @throws Exception
-       */
       public static void main(String[] args) throws Exception {
+
+        LOG.info("start embedded jetty server...");
+        //TODO: server port from configuration
+        RestServer server = new RestServer("0.0.0.0", 8080);
+        server.startUp();
+
+        LOG.info("start parse history");
         ToolRunner.run(new JobCostServer(), args);
+
+          //TODO: close HTable
+
       }
 
     }
