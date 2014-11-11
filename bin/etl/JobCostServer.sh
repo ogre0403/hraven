@@ -45,4 +45,4 @@ etl=`cd "$etl">/dev/null; pwd`
 CLASSPATH=`hbase classpath`
 HRAVEN_HOME=${HRAVEN_HOME:-$etl/../../}
 
-java -cp $HRAVEN_HOME/conf/:$CLASSPATH:$hravenEtlJar:$LIBJARS  com.twitter.hraven.etl.JobCostServer -d  -i $1 -c $2
+java -cp $HRAVEN_HOME/conf/:$CLASSPATH:$hravenEtlJar:$LIBJARS  org.nchc.history.JobCostServer -d  -i $1 -c $2
