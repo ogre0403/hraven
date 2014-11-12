@@ -275,6 +275,7 @@ public class Constants {
    *  hadoop-version-independent property for queuename
    */
   public static final String HRAVEN_QUEUE = "queue";
+  public static final String MR_QUEUE =  "mapreduce.job.queuename";
 
   /** raw bytes representation of the queue parameter */
   public static final byte[] HRAVEN_QUEUE_BYTES = Bytes.toBytes(HRAVEN_QUEUE);

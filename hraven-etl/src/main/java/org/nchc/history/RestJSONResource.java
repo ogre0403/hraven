@@ -82,8 +82,7 @@ public class RestJSONResource {
         }
       };
 
-
-   @GET
+  @GET
   @Path("job/{cluster}/{jobId}")
   @Produces(MediaType.APPLICATION_JSON)
   public JobDetails getJobById(@PathParam("cluster") String cluster,
@@ -159,20 +158,6 @@ public class RestJSONResource {
      return distinctVersions;
   }
 
-   @GET
-   @Path("getCluster/")
-   @Produces(MediaType.APPLICATION_JSON)
-   public String getCluster(@QueryParam("hostname") String hostname)
-                                        throws ProcessingException, IOException {
-
-     if(StringUtils.isBlank(hostname)) {
-       throw new ProcessingException("hostname not present, "
-         + "please resend with that info");
-     }
-    String cluster = Cluster.getIdentifier(hostname);
-    LOG.info("Fetched cluster identifier=" + cluster + " for hostname=" + hostname);
-    return cluster;
-   }
 
 
   @GET
