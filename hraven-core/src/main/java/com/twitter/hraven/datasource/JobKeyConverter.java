@@ -47,6 +47,20 @@ public class JobKeyConverter implements ByteConverter<JobKey> {
     }
   }
 
+    public byte[] toBytesSortByTS(JobKey jobKey) {
+        if (jobKey == null) {
+            return Constants.EMPTY_BYTES;
+        } else {
+            return ByteUtil.join(Constants.SEP_BYTES,
+                    Bytes.toBytes(jobKey.getCluster()),
+                    Bytes.toBytes(jobKey.getUserName()),
+                    Bytes.toBytes(jobKey.getEncodedRunId()),
+                    Bytes.toBytes(jobKey.getAppId()),
+                    idConv.toBytes(jobKey.getJobId()));
+        }
+    }
+
+
   /**
    * Reverse operation of
    * {@link JobKeyConverter#toBytes(com.twitter.hraven.JobKey)}

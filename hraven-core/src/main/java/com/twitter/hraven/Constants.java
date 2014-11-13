@@ -136,6 +136,9 @@ public class Constants {
 
   public static final String ROWKEY_COL = "rowkey";
   public static final byte[] ROWKEY_COL_BYTES = Bytes.toBytes(ROWKEY_COL);
+  public static final String ROWKEY_BY_TS_COL = "rk_t";
+  public static final byte[] ROWKEY_BY_TS_COL_BYTES = Bytes.toBytes(ROWKEY_BY_TS_COL);
+
 
   public static final String RECORD_TYPE_COL = "rec_type";
   public static final byte[] RECORD_TYPE_COL_BYTES = Bytes
@@ -427,4 +430,8 @@ public class Constants {
 
   /** name of the properties file used for cluster to cluster identifier mapping */
   public static final String HRAVEN_CLUSTER_PROPERTIES_FILENAME = "hRavenClusters.properties";
+
+  public static final String MAP_ATTEMPT_TYPE       = "m";
+  public static final String REDUCE_ATTEMPT_TYPE    = "r";
+  public static final String OTHER_ATTEMPT_TYPE     = "o";
 }

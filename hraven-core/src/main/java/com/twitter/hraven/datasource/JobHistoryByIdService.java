@@ -91,12 +91,14 @@ public class JobHistoryByIdService {
     // Defensive coding
     if (jobKey != null) {
       byte[] jobKeyBytes = jobKeyConv.toBytes(jobKey);
+      byte[] jobKeyTsBytes = jobKeyConv.toBytesSortByTS(jobKey);
       byte[] rowKeyBytes = jobIdConv.toBytes(
           new QualifiedJobId(jobKey.getCluster(), jobKey.getJobId()) );
 
       // Insert (or update) row with jobid as the key
       Put p = new Put(rowKeyBytes);
       p.add(Constants.INFO_FAM_BYTES, Constants.ROWKEY_COL_BYTES, jobKeyBytes);
+      p.add(Constants.INFO_FAM_BYTES, Constants.ROWKEY_BY_TS_COL_BYTES, jobKeyTsBytes);
       historyByJobIdTable.put(p);
     }
   }

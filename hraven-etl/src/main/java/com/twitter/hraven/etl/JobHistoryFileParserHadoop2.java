@@ -59,6 +59,7 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
   /** Job ID, minus the leading "job_" */
   private String jobNumber = "";
   private byte[] jobKeyBytes;
+  private byte[] jobKeyByTS;
   private List<Put> jobPuts = new LinkedList<Put>();
   private List<Put> taskPuts = new LinkedList<Put>();
   boolean uberized = false;
@@ -147,21 +148,25 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
     JobQueueChange("JOB_QUEUE_CHANGED"),
     JobSubmitted("JOB_SUBMITTED"),
     JobUnsuccessfulCompletion("JOB_KILLED","JOB_FAILED"),
+
+      //Map Attempt type
+    MapAttemptStarted("MAP_ATTEMPT_STARTED"),
     MapAttemptFinished("MAP_ATTEMPT_FINISHED"),
+    MapAttemptUnsuccessfulCompletion("MAP_ATTEMPT_KILLED","MAP_ATTEMPT_FAILED"),
+      //Reduce Attempt type
     ReduceAttemptFinished("REDUCE_ATTEMPT_FINISHED"),
-    TaskAttemptFinished("CLEANUP_ATTEMPT_FINISHED"),
-    TaskAttemptStarted("CLEANUP_ATTEMPT_STARTED",
-      "SETUP_ATTEMPT_STARTED",
-      "REDUCE_ATTEMPT_STARTED",
-      "MAP_ATTEMPT_STARTED"),
-    TaskAttemptUnsuccessfulCompletion("CLEANUP_ATTEMPT_KILLED",
-      "CLEANUP_ATTEMPT_FAILED",
-      "SETUP_ATTEMPT_KILLED",
-      "SETUP_ATTEMPT_FAILED",
-      "REDUCE_ATTEMPT_KILLED",
-      "REDUCE_ATTEMPT_FAILED",
-      "MAP_ATTEMPT_KILLED",
-      "MAP_ATTEMPT_FAILED"),
+    ReduceAttemptStarted("REDUCE_ATTEMPT_STARTED"),
+    ReduceAttemptUnsuccessfulCompletion("REDUCE_ATTEMPT_KILLED",  "REDUCE_ATTEMPT_FAILED"),
+      //SETUP & CLEANUP Attempt type
+    TaskAttemptFinished("CLEANUP_ATTEMPT_FINISHED","SETUP_ATTEMPT_FINISHED"),
+    TaskAttemptStarted("CLEANUP_ATTEMPT_STARTED","SETUP_ATTEMPT_STARTED"),
+    TaskAttemptUnsuccessfulCompletion(
+            "CLEANUP_ATTEMPT_KILLED",
+            "CLEANUP_ATTEMPT_FAILED",
+            "SETUP_ATTEMPT_KILLED",
+            "SETUP_ATTEMPT_FAILED"
+      ),
+      //Task
     TaskFailed("TASK_FAILED"),
     TaskFinished("TASK_FINISHED"),
     TaskStarted("TASK_STARTED"),
@@ -225,6 +230,7 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
 
     this.jobKey = jobKey;
     this.jobKeyBytes = jobKeyConv.toBytes(jobKey);
+    this.jobKeyByTS = jobKeyConv.toBytesSortByTS(jobKey);
     setJobId(jobKey.getJobId().getJobIdString());
 
     try {
@@ -294,12 +300,16 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
      * events are not so we need to look through the whole file to confirm
      * the job status and then generate the put
      */
-    Put jobStatusPut = getJobStatusPut();
-    this.jobPuts.add(jobStatusPut);
+//  Put jobStatusPut = getJobStatusPut();
+//  this.jobPuts.add(jobStatusPut);
+    List<Put> ps = getJobStatusPuts();
+    this.jobPuts.addAll(ps);
 
     // set the hadoop version for this record
     Put versionPut = getHadoopVersionPut(JobHistoryFileParserFactory.getHistoryFileVersion2(), this.jobKeyBytes);
+    Put versionPut1 = getHadoopVersionPut(JobHistoryFileParserFactory.getHistoryFileVersion2(), this.jobKeyByTS);
     this.jobPuts.add(versionPut);
+    this.jobPuts.add(versionPut1);
 
     LOG.info("For " + this.jobKey + " #jobPuts " + jobPuts.size() + " #taskPuts: "
         + taskPuts.size());
@@ -315,6 +325,22 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
     byte[] qualifier = Bytes.toBytes(JobHistoryKeys.JOB_STATUS.toString().toLowerCase());
     pStatus.add(Constants.INFO_FAM_BYTES, qualifier, valueBytes);
     return pStatus;
+  }
+
+  private List<Put> getJobStatusPuts() {
+      List<Put> lp = new LinkedList<Put>();
+      Put pStatus;
+      pStatus= new Put(jobKeyBytes);
+      byte[] valueBytes = Bytes.toBytes(this.jobStatus);
+      byte[] qualifier = Bytes.toBytes(JobHistoryKeys.JOB_STATUS.toString().toLowerCase());
+      pStatus.add(Constants.INFO_FAM_BYTES, qualifier, valueBytes);
+      lp.add(pStatus);
+      pStatus= new Put(jobKeyByTS);
+      valueBytes = Bytes.toBytes(this.jobStatus);
+      qualifier = Bytes.toBytes(JobHistoryKeys.JOB_STATUS.toString().toLowerCase());
+      pStatus.add(Constants.INFO_FAM_BYTES, qualifier, valueBytes);
+      lp.add(pStatus);
+      return lp;
   }
 
   /**
@@ -410,7 +436,13 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
     if (COUNTER_NAMES.contains(key)) {
       processCounters(p, eventDetails, key);
     } else {
-      String type = fieldTypes.get(recType).get(key);
+      String type;
+      Map<String, String> tm = fieldTypes.get(recType);
+      if(fieldTypes.get(recType) == null)
+          type = TYPE_STRING;
+      else
+          type = tm.get(key);
+
       if (type.equalsIgnoreCase(TYPE_STRING)) {
         // look for job status
         if (JobHistoryKeys.JOB_STATUS.toString().equals(
@@ -494,9 +526,15 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
     case JobQueueChange:
     case JobSubmitted:
     case JobUnsuccessfulCompletion:
+      // For scan Job sort by Name
       Put pJob = new Put(this.jobKeyBytes);
       iterateAndPreparePuts(eventDetails, pJob, recType);
       this.jobPuts.add(pJob);
+
+      // for scan Job sort by TS
+      Put pJobT = new Put(this.jobKeyByTS);
+      iterateAndPreparePuts(eventDetails, pJobT, recType);
+      this.jobPuts.add(pJobT);
       break;
 
     case AMStarted:
@@ -510,9 +548,12 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
       taskPuts.add(pAM);
       break;
 
+    case MapAttemptStarted:
     case MapAttemptFinished:
+    case MapAttemptUnsuccessfulCompletion:
       byte[] taskMAttemptIdKeyBytes =
-          getTaskKey(TASK_ATTEMPT_PREFIX, this.jobNumber, eventDetails.getString(ATTEMPTID));
+              getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
+                      eventDetails.getString(ATTEMPTID), Constants.MAP_ATTEMPT_TYPE);
       Put pMTaskAttempt = new Put(taskMAttemptIdKeyBytes);
       pMTaskAttempt.add(Constants.INFO_FAM_BYTES, Constants.RECORD_TYPE_COL_BYTES,
         Bytes.toBytes(RecordTypes.MapAttempt.toString()));
@@ -520,9 +561,13 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
       this.taskPuts.add(pMTaskAttempt);
       break;
 
+
+    case ReduceAttemptStarted:
     case ReduceAttemptFinished:
+    case ReduceAttemptUnsuccessfulCompletion:
       byte[] taskRAttemptIdKeyBytes =
-          getTaskKey(TASK_ATTEMPT_PREFIX, this.jobNumber, eventDetails.getString(ATTEMPTID));
+          getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
+                  eventDetails.getString(ATTEMPTID), Constants.REDUCE_ATTEMPT_TYPE);
       Put pRTaskAttempt = new Put(taskRAttemptIdKeyBytes);
       pRTaskAttempt.add(Constants.INFO_FAM_BYTES, Constants.RECORD_TYPE_COL_BYTES,
         Bytes.toBytes(RecordTypes.ReduceAttempt.toString()));
@@ -530,12 +575,15 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
       this.taskPuts.add(pRTaskAttempt);
       break;
 
+
     case TaskAttemptFinished:
     case TaskAttemptStarted:
     case TaskAttemptUnsuccessfulCompletion:
       byte[] taskAttemptIdKeyBytes =
-          getTaskKey(TASK_ATTEMPT_PREFIX, this.jobNumber, eventDetails.getString(ATTEMPTID));
+          getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
+                  eventDetails.getString(ATTEMPTID), Constants.OTHER_ATTEMPT_TYPE);
       Put pTaskAttempt = new Put(taskAttemptIdKeyBytes);
+        //TODO: see if define another attempt type in RecordTypes
       pTaskAttempt.add(Constants.INFO_FAM_BYTES, Constants.RECORD_TYPE_COL_BYTES,
         Bytes.toBytes(RecordTypes.Task.toString()));
       iterateAndPreparePuts(eventDetails, pTaskAttempt, recType);
@@ -547,7 +595,7 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
     case TaskUpdated:
     case TaskFinished:
       byte[] taskIdKeyBytes =
-          getTaskKey(TASK_PREFIX, this.jobNumber, eventDetails.getString(TASKID));
+            getNewTaskKey(TASK_PREFIX, this.jobNumber, eventDetails.getString(TASKID));
       Put pTask = new Put(taskIdKeyBytes);
       pTask.add(Constants.INFO_FAM_BYTES, Constants.RECORD_TYPE_COL_BYTES,
         Bytes.toBytes(RecordTypes.Task.toString()));
@@ -752,6 +800,36 @@ public class JobHistoryFileParserHadoop2 extends JobHistoryFileParserBase {
         + " and " + key + ": " + memoryMb);
     return updatedCounterValue;
   }
+
+    public byte[] getAttemptKey(String prefix, String jobNumber, String fullId, String attempt_type){
+        StringBuilder sb1 = new StringBuilder();
+        if (fullId == null) {
+            sb1.append("");
+        } else {
+            StringBuilder sb2 = new StringBuilder();
+            sb2.append(prefix).append(jobNumber).append("_");
+            if ((fullId.startsWith(sb2.toString())) && (fullId.length() > sb2.length())) {
+                sb1.append("a").append(attempt_type).append(Constants.SEP).append(fullId.substring(sb2.length()));
+            }
+        }
+        return taskKeyConv.toBytes(new TaskKey(this.jobKey, sb1.toString()));
+    }
+
+    public byte[] getNewTaskKey(String prefix, String jobNumber, String fullId){
+        StringBuilder sb1 = new StringBuilder();
+        if (fullId == null) {
+            sb1.append("");
+        } else {
+            StringBuilder sb2 = new StringBuilder();
+            sb1.append(prefix).append(jobNumber).append("_");
+            if ((fullId.startsWith(sb1.toString())) && (fullId.length() > sb1.length())) {
+                sb2.append(fullId.substring(sb1.length()));
+                sb1.setLength(0);
+                sb1.append("t").append(sb2.charAt(0)).append(Constants.SEP).append(sb2);
+            }
+        }
+        return taskKeyConv.toBytes(new TaskKey(this.jobKey, sb1.toString()));
+    }
 
   /**
    * Returns the Task ID or Task Attempt ID, stripped of the leading job ID, appended to the job row
