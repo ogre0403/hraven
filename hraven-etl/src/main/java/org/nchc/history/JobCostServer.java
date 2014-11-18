@@ -438,9 +438,9 @@
                         throw new ProcessingException(" Unable to get megabyte millis calculation for this record!" + jobKey);
                     }
 
-                    Put mbPut = PutUtil.getMegaByteMillisPut(mbMillis, jobKey);
+                    List<Put> mbPut = PutUtil.getMegaByteMillisPut(mbMillis, jobKey);
                     LOG.info("Writing mega byte millis  puts to " + Constants.HISTORY_TABLE);
-                    jobputs.add(mbPut);
+                    jobputs.addAll(mbPut);
 
                     /** post processing steps to get cost of the job */
                     Double jobCost = PutUtil.getJobCost(mbMillis, macType, costdetail);
@@ -448,9 +448,9 @@
                         throw new ProcessingException(" Unable to get job cost calculation for this record!"
                                 + jobKey);
                     }
-                    Put jobCostPut = PutUtil.getJobCostPut(jobCost, jobKey);
+                    List<Put> jobCostPut = PutUtil.getJobCostPut(jobCost, jobKey);
                     LOG.info("Writing jobCost puts to " + Constants.HISTORY_TABLE);
-                    jobputs.add(jobCostPut);
+                    jobputs.addAll(jobCostPut);
 
 
                     jobTable.put(jobputs);

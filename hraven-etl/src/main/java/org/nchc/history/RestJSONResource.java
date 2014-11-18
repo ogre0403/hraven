@@ -42,6 +42,20 @@ public class RestJSONResource {
   private static final String SLASH = "/" ;
 
   private static final Configuration HBASE_CONF = HBaseConfiguration.create();
+
+  private static final ThreadLocal<queryJobService> queryThreadLocal =
+        new ThreadLocal<queryJobService>() {
+            @Override
+            protected queryJobService initialValue() {
+                try {
+                    LOG.info("Initializing queryJobService");
+                    return new queryJobService(HBASE_CONF);
+                } catch (IOException e) {
+                    throw new RuntimeException("Could not initialize queryJobService", e);
+                }
+            }
+  };
+
   private static final ThreadLocal<JobHistoryService> serviceThreadLocal =
     new ThreadLocal<JobHistoryService>() {
     @Override
@@ -68,25 +82,46 @@ public class RestJSONResource {
       }
     };
 
-  private static final ThreadLocal<AppSummaryService> serviceThreadLocalAppService =
-        new ThreadLocal<AppSummaryService>() {
 
-        @Override
-        protected AppSummaryService initialValue() {
-          try {
-            LOG.info("Initializing AppService");
-            return new AppSummaryService(HBASE_CONF);
-          } catch (IOException e) {
-            throw new RuntimeException("Could not initialize AppService", e);
-          }
+
+
+    @GET
+    @Path("job/{cluster}/{user}/{jobname}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<JobDetails> getJobByTimeInterval(
+            @PathParam("cluster") String cluster,
+            @PathParam("user") String user,
+            @PathParam("jobname") String jobname,
+            @DefaultValue("-1")@QueryParam("start") long start_time,
+            @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
+        if(start_time < 0 || end_time < 0 || start_time > end_time ) {
+            // given incorrect Time interval or time interval not set, return all Job runs
+            return getQueryService().getCertainJobAllRuns(cluster,user,jobname);
         }
-      };
+        return getQueryService().getCertainJobRunsInTimeInterval(cluster,user,jobname,start_time,end_time);
+    }
+
+
+    @GET
+    @Path("job/{cluster}/{user}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<JobDetails> getJobByTimeInterval(
+            @PathParam("cluster") String cluster,
+            @PathParam("user") String user,
+            @DefaultValue("-1")@QueryParam("start") long start_time,
+            @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
+        if(start_time < 0 || end_time < 0 || start_time > end_time ) {
+            // given incorrect Time interval or time interval not set, return all Job runs
+            return getQueryService().getAllJobInTimeInterval(cluster,user);
+        }
+        return getQueryService().getAllJobInTimeInterval(cluster,user,start_time,end_time);
+    }
 
   @GET
-  @Path("job/{cluster}/{jobId}")
+  @Path("job/{cluster}")
   @Produces(MediaType.APPLICATION_JSON)
   public JobDetails getJobById(@PathParam("cluster") String cluster,
-                               @PathParam("jobId") String jobId) throws IOException {
+                               @QueryParam("jobId") String jobId) throws IOException {
     LOG.info("Fetching JobDetails for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
 
@@ -99,12 +134,9 @@ public class RestJSONResource {
       LOG.info("For job/{cluster}/{jobId} with input query:" + " job/" + cluster + SLASH + jobId
           + " No jobDetails found, but spent " + timer);
     }
-    // export latency metrics
-    HravenResponseMetrics.JOB_API_LATENCY_VALUE.set(timer.elapsed(TimeUnit.MILLISECONDS));
-
     return jobDetails;
-
   }
+
 
   @GET
   @Path("tasks/{cluster}/{jobId}")
@@ -153,70 +185,18 @@ public class RestJSONResource {
        + " fetched #number of VersionInfo " + distinctVersions.size() + " in " );//+ timer);
 
      // export latency metrics
-     HravenResponseMetrics.APPVERSIONS_API_LATENCY_VALUE
-       .set(timer.elapsed(TimeUnit.MILLISECONDS));
      return distinctVersions;
   }
 
 
 
-  @GET
-  @Path("newJobs/{cluster}/")
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<AppSummary> getNewJobs(@PathParam("cluster") String cluster,
-                                   @QueryParam("user") String user,
-                                   @QueryParam("startTime") long startTime,
-                                   @QueryParam("endTime") long endTime,
-                                   @QueryParam("limit") int limit)
-                                       throws IOException {
-    Stopwatch timer = new Stopwatch().start();
-
-    if(limit == 0) {
-      limit = Integer.MAX_VALUE;
+    private static queryJobService getQueryService(){
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format("Returning JobHistoryService %s bound to thread %s",
+                    queryThreadLocal.get(), Thread.currentThread().getName()));
+        }
+        return queryThreadLocal.get();
     }
-    if(startTime == 0L) {
-      // 24 hours back
-      startTime = System.currentTimeMillis() - Constants.MILLIS_ONE_DAY ;
-      // get top of the hour
-      startTime -= (startTime % 3600);
-    }
-    if(endTime == 0L) {
-      // now
-      endTime = System.currentTimeMillis() ;
-      // get top of the hour
-      endTime -= (endTime % 3600);
-    }
-
-    LOG.info("Fetching new Jobs for cluster=" + cluster + " user=" + user
-       + " startTime=" + startTime + " endTime=" + endTime);
-    AppSummaryService as = getAppSummaryService();
-    // get the row keys from AppVersions table via JobHistoryService
-    List<AppSummary> newApps = as.getNewApps(getJobHistoryService(),
-          StringUtils.trimToEmpty(cluster), StringUtils.trimToEmpty(user),
-          startTime, endTime, limit);
-
-    timer.stop();
-
-    LOG.info("For newJobs/{cluster}/{user}/{appId}/ with input query "
-      + "newJobs/" + cluster + SLASH + user
-      + "?limit=" + limit
-      + "&startTime=" + startTime
-      + "&endTime=" + endTime
-      + " fetched " + newApps.size() + " flows in " + timer);
-
-   // export latency metrics
-   HravenResponseMetrics.NEW_JOBS_API_LATENCY_VALUE
-       .set(timer.elapsed(TimeUnit.MILLISECONDS));
-    return newApps;
- }
-
-  private AppSummaryService getAppSummaryService() {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(String.format("Returning AppService %s bound to thread %s",
-        serviceThreadLocalAppService.get(), Thread.currentThread().getName()));
-    }
-    return serviceThreadLocalAppService.get();
-  }
 
 
   private static JobHistoryService getJobHistoryService() throws IOException {

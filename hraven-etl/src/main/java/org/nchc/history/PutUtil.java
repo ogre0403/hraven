@@ -15,6 +15,7 @@ import org.apache.hadoop.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
@@ -25,16 +26,27 @@ public class PutUtil {
     private static JobKeyConverter jobKeyConv = new JobKeyConverter();
     private static Log LOG = LogFactory.getLog(PutUtil.class);
 
-    public static Put getJobCostPut(Double jobCost, JobKey jobKey) {
+    public static List<Put> getJobCostPut(Double jobCost, JobKey jobKey) {
+
+        List<Put> ps = new LinkedList<Put>();
         Put pJobCost = new Put(jobKeyConv.toBytes(jobKey));
         pJobCost.add(Constants.INFO_FAM_BYTES, Constants.JOBCOST_BYTES, Bytes.toBytes(jobCost));
-        return pJobCost;
+        ps.add(pJobCost);
+        pJobCost = new Put(jobKeyConv.toBytesSortByTS(jobKey));
+        pJobCost.add(Constants.INFO_FAM_BYTES, Constants.JOBCOST_BYTES, Bytes.toBytes(jobCost));
+        ps.add(pJobCost);
+        return ps;
     }
 
-    public static Put getMegaByteMillisPut(Long mbMillis, JobKey jobKey) {
+    public static List<Put> getMegaByteMillisPut(Long mbMillis, JobKey jobKey) {
+        List<Put> ps = new LinkedList<Put>();
         Put pMb = new Put(jobKeyConv.toBytes(jobKey));
         pMb.add(Constants.INFO_FAM_BYTES, Constants.MEGABYTEMILLIS_BYTES, Bytes.toBytes(mbMillis));
-        return pMb;
+        ps.add(pMb);
+        pMb = new Put(jobKeyConv.toBytesSortByTS(jobKey));
+        pMb.add(Constants.INFO_FAM_BYTES, Constants.MEGABYTEMILLIS_BYTES, Bytes.toBytes(mbMillis));
+        ps.add(pMb);
+        return ps;
     }
 
     public static void addFileNamePut(List<Put> puts, byte[] rowKey,

@@ -47,16 +47,25 @@ public class JobKeyConverter implements ByteConverter<JobKey> {
     }
   }
 
+    /**
+     * cluster!user $ runID!JobName!JobID
+     *
+     * */
     public byte[] toBytesSortByTS(JobKey jobKey) {
         if (jobKey == null) {
             return Constants.EMPTY_BYTES;
         } else {
-            return ByteUtil.join(Constants.SEP_BYTES,
-                    Bytes.toBytes(jobKey.getCluster()),
-                    Bytes.toBytes(jobKey.getUserName()),
-                    Bytes.toBytes(jobKey.getEncodedRunId()),
-                    Bytes.toBytes(jobKey.getAppId()),
-                    idConv.toBytes(jobKey.getJobId()));
+            return Bytes.add(
+                    Bytes.add(Bytes.toBytes(jobKey.getCluster()),   // cluster
+                            Constants.SEP_BYTES,                    //!
+                            Bytes.toBytes(jobKey.getUserName())),   //user
+                    Constants.SEP2_BYTES,                           //$
+                    ByteUtil.join(Constants.SEP_BYTES,              //!
+                            Bytes.toBytes(jobKey.getEncodedRunId()),//runID
+                            Bytes.toBytes(jobKey.getAppId()),       //JobName
+                            idConv.toBytes(jobKey.getJobId())       //JobID
+                            )
+            );
         }
     }
 
@@ -73,6 +82,27 @@ public class JobKeyConverter implements ByteConverter<JobKey> {
     byte[][] splits = splitJobKey(bytes);
     // no combined runId + jobId, parse as is
     return parseJobKey(splits);
+  }
+
+  public JobKey fromTsSortedBytes(byte[] bytes){
+      byte[][] splits = splitTsSortedJobKey(bytes);
+      return parseJobKey(splits);
+  }
+
+  public byte[][] splitTsSortedJobKey(byte[] rawKey) {
+      byte[][] outarray = new byte[5][];
+      byte[][] splits = ByteUtil.split(rawKey, Constants.SEP2_BYTES, 2);
+      byte[][] split2 = ByteUtil.split(splits[0],Constants.SEP_BYTES,2);
+      byte[][] split3 = ByteUtil.split(splits[1],Constants.SEP_BYTES,3);
+
+
+      outarray[0] = split2[0];
+      outarray[1] = split2[1];
+      outarray[2] = split3[1];
+      outarray[3] = split3[0];
+      outarray[4] = split3[2];
+
+      return outarray;
   }
 
   /**

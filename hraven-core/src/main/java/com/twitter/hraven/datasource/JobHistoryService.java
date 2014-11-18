@@ -710,9 +710,11 @@ public class JobHistoryService {
    */
   public static List<Put> getHbasePuts(JobDesc jobDesc, Configuration jobConf) {
     List<Put> puts = new LinkedList<Put>();
+    JobKeyConverter jkcvrt = new JobKeyConverter();
 
     JobKey jobKey = new JobKey(jobDesc);
-    byte[] jobKeyBytes = new JobKeyConverter().toBytes(jobKey);
+    byte[] jobKeyBytes = jkcvrt.toBytes(jobKey);
+    byte[] jkByTS = jkcvrt.toBytesSortByTS(jobKey);
 
     // Add all columns to one put
     Put jobPut = new Put(jobKeyBytes);
@@ -720,6 +722,12 @@ public class JobHistoryService {
         Bytes.toBytes(jobDesc.getVersion()));
     jobPut.add(Constants.INFO_FAM_BYTES, Constants.FRAMEWORK_COLUMN_BYTES,
         Bytes.toBytes(jobDesc.getFramework().toString()));
+
+    Put jobputbyTS = new Put(jkByTS);
+      jobputbyTS.add(Constants.INFO_FAM_BYTES, Constants.VERSION_COLUMN_BYTES,
+              Bytes.toBytes(jobDesc.getVersion()));
+      jobputbyTS.add(Constants.INFO_FAM_BYTES, Constants.FRAMEWORK_COLUMN_BYTES,
+              Bytes.toBytes(jobDesc.getFramework().toString()));
 
     // Avoid doing string to byte conversion inside loop.
     byte[] jobConfColumnPrefix = Bytes.toBytes(Constants.JOB_CONF_COLUMN_PREFIX
@@ -732,15 +740,16 @@ public class JobHistoryService {
       // Prefix the job conf entry column with an indicator to
       byte[] column = Bytes.add(jobConfColumnPrefix,
           Bytes.toBytes(entry.getKey()));
-      jobPut.add(Constants.INFO_FAM_BYTES, column,
-          Bytes.toBytes(entry.getValue()));
+      jobPut.add(Constants.INFO_FAM_BYTES, column, Bytes.toBytes(entry.getValue()));
+      jobputbyTS.add(Constants.INFO_FAM_BYTES, column, Bytes.toBytes(entry.getValue()));
     }
 
     // ensure pool/queuename is set correctly
     setHravenQueueNamePut(jobConf, jobPut, jobKey, jobConfColumnPrefix);
+    setHravenQueueNamePut(jobConf, jobputbyTS, jobKey, jobConfColumnPrefix);
 
     puts.add(jobPut);
-
+    puts.add(jobputbyTS);
     return puts;
   }
 
