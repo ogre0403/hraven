@@ -56,34 +56,6 @@ public class RestJSONResource {
             }
   };
 
-  private static final ThreadLocal<JobHistoryService> serviceThreadLocal =
-    new ThreadLocal<JobHistoryService>() {
-    @Override
-    protected JobHistoryService initialValue() {
-      try {
-        LOG.info("Initializing JobHistoryService");
-        return new JobHistoryService(HBASE_CONF);
-      } catch (IOException e) {
-        throw new RuntimeException("Could not initialize JobHistoryService", e);
-      }
-    }
-  };
-
-  private static final ThreadLocal<AppVersionService> serviceThreadLocalAppVersion =
-      new ThreadLocal<AppVersionService>() {
-      @Override
-      protected AppVersionService initialValue() {
-        try {
-          LOG.info("Initializing AppVersionService");
-          return new AppVersionService(HBASE_CONF);
-        } catch (IOException e) {
-          throw new RuntimeException("Could not initialize AppVersionService", e);
-        }
-      }
-    };
-
-
-
 
     @GET
     @Path("job/{cluster}/{user}/{jobname}")
@@ -92,13 +64,14 @@ public class RestJSONResource {
             @PathParam("cluster") String cluster,
             @PathParam("user") String user,
             @PathParam("jobname") String jobname,
+            @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
         if(start_time < 0 || end_time < 0 || start_time > end_time ) {
             // given incorrect Time interval or time interval not set, return all Job runs
-            return getQueryService().getCertainJobAllRuns(cluster,user,jobname);
+            return getQueryService().getCertainJobAllRuns(cluster,user,jobname,counter);
         }
-        return getQueryService().getCertainJobRunsInTimeInterval(cluster,user,jobname,start_time,end_time);
+        return getQueryService().getCertainJobRunsInTimeInterval(cluster,user,jobname,start_time,end_time,counter);
     }
 
 
@@ -108,13 +81,14 @@ public class RestJSONResource {
     public List<JobDetails> getJobByTimeInterval(
             @PathParam("cluster") String cluster,
             @PathParam("user") String user,
+            @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
         if(start_time < 0 || end_time < 0 || start_time > end_time ) {
             // given incorrect Time interval or time interval not set, return all Job runs
-            return getQueryService().getAllJobInTimeInterval(cluster,user);
+            return getQueryService().getAllJobInTimeInterval(cluster,user,counter);
         }
-        return getQueryService().getAllJobInTimeInterval(cluster,user,start_time,end_time);
+        return getQueryService().getAllJobInTimeInterval(cluster,user,start_time,end_time,counter);
     }
 
     @GET
@@ -140,14 +114,13 @@ public class RestJSONResource {
   @Path("job/{cluster}")
   @Produces(MediaType.APPLICATION_JSON)
   public JobDetails getJobById(@PathParam("cluster") String cluster,
-                               @QueryParam("jobId") String jobId) throws IOException {
+                               @QueryParam("jobId") String jobId,
+                               @DefaultValue("false")@QueryParam("counter") boolean counter ) throws IOException {
     LOG.info("Fetching JobDetails for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
 
-    JobDetails jobDetails =
-            (jobId == null)?
-            null:
-            getJobHistoryService().getJobByJobID(cluster, jobId);
+    JobDetails jobDetails  = (jobId == null)?  null:
+          getQueryService().getJobByJobID(cluster, jobId, counter);
 
     timer.stop();
     if (jobDetails != null) {
@@ -169,7 +142,8 @@ public class RestJSONResource {
     LOG.info("Fetching tasks info for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
 
-    JobDetails jobDetails = getJobHistoryService().getJobByJobID(cluster, jobId, true);
+//    JobDetails jobDetails = getJobHistoryService().getJobByJobID(cluster, jobId, true);
+    JobDetails jobDetails =null;
     timer.stop();
     List<TaskDetails> tasks = jobDetails.getTasks();
     if(tasks != null && !tasks.isEmpty()) {
@@ -184,36 +158,6 @@ public class RestJSONResource {
 
 
 
-   @GET
-   @Path("appVersion/{cluster}/{user}/{appId}/")
-   @Produces(MediaType.APPLICATION_JSON)
-   public List<VersionInfo> getDistinctVersions(@PathParam("cluster") String cluster,
-                                    @PathParam("user") String user,
-                                    @PathParam("appId") String appId,
-                                    @QueryParam("limit") int limit) throws IOException {
-     Stopwatch timer = new Stopwatch().start();
-
-     if (LOG.isTraceEnabled()) {
-      LOG.trace("Fetching App Versions for cluster=" + cluster + " user=" + user + " app=" + appId);
-     }
-     List<VersionInfo> distinctVersions = serviceThreadLocalAppVersion.get()
-                                             .getDistinctVersions(
-                                                 StringUtils.trimToEmpty(cluster),
-                                                 StringUtils.trimToEmpty(user),
-                                                 StringUtils.trimToEmpty(appId));
-     timer.stop();
-
-     LOG.info("For appVersion/{cluster}/{user}/{appId}/ with input query "
-       + "appVersion/" + cluster + SLASH + user + SLASH + appId
-       + "?limit=" + limit
-       + " fetched #number of VersionInfo " + distinctVersions.size() + " in " );//+ timer);
-
-     // export latency metrics
-     return distinctVersions;
-  }
-
-
-
     private static queryJobService getQueryService(){
         if (LOG.isDebugEnabled()) {
             LOG.debug(String.format("Returning JobHistoryService %s bound to thread %s",
@@ -223,11 +167,4 @@ public class RestJSONResource {
     }
 
 
-  private static JobHistoryService getJobHistoryService() throws IOException {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(String.format("Returning JobHistoryService %s bound to thread %s",
-        serviceThreadLocal.get(), Thread.currentThread().getName()));
-    }
-    return serviceThreadLocal.get();
-  }
 }

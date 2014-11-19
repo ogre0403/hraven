@@ -3,6 +3,7 @@ package org.nchc.history;
 import com.twitter.hraven.Constants;
 import com.twitter.hraven.JobDetails;
 import com.twitter.hraven.JobKey;
+import com.twitter.hraven.QualifiedJobId;
 import com.twitter.hraven.datasource.JobHistoryByIdService;
 import com.twitter.hraven.datasource.JobKeyConverter;
 import com.twitter.hraven.datasource.TaskKeyConverter;
@@ -11,6 +12,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.QualifierFilter;
+import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
@@ -23,6 +28,12 @@ import java.util.List;
  */
 public class queryJobService {
     private static final Log LOG = LogFactory.getLog(queryJobService.class);
+    private static final String NOCOUNTER_REGEXP =    //"^(gm!|gr!|c!|g!)"
+            "^("+Constants.MAP_COUNTER_COLUMN_PREFIX+Constants.SEP+"|"+
+                    Constants.COUNTER_COLUMN_PREFIX+Constants.SEP+"|"+
+                    Constants.REDUCE_COUNTER_COLUMN_PREFIX+Constants.SEP+"|"+
+                    Constants.JOB_CONF_COLUMN_PREFIX+Constants.SEP+")";
+
     private final Configuration myConf;
     private final HTable historyTable;
     private final HTable taskTable;
@@ -45,17 +56,20 @@ public class queryJobService {
         this.defaultScannerCaching = myConf.getInt("hbase.client.scanner.caching", 100);
     }
 
-    // String jobID_str = job_1415006048688_000008;
-
-
     public List<JobDetails> getCertainJobRunsInTimeInterval(String cluster, String user, String jobname,
-            long start_time, long end_time) throws IOException {
+            long start_time, long end_time,boolean getCounter) throws IOException {
         LOG.info(cluster + "/"+user+"/"+jobname+"/"+start_time+"/"+end_time);
         byte[] rowPrefix = Bytes.toBytes((cluster + Constants.SEP + user + Constants.SEP
                 + jobname + Constants.SEP));
         byte[] scanStartRow = Bytes.add(rowPrefix, Bytes.toBytes(encodeTS(end_time)), Constants.SEP_BYTES);
         byte[] scanEndRow = Bytes.add(rowPrefix, Bytes.toBytes(encodeTS(start_time)), Constants.SEP_BYTES);
+
         Scan scan = new Scan();
+        if(getCounter == false){
+            Filter qfilter = new QualifierFilter(CompareFilter.CompareOp.NOT_EQUAL,
+                    new RegexStringComparator(NOCOUNTER_REGEXP));
+            scan.setFilter(qfilter);
+        }
         scan.setStartRow(scanStartRow);
         scan.setStopRow(scanEndRow);
         ResultScanner scanner = historyTable.getScanner(scan);
@@ -71,15 +85,16 @@ public class queryJobService {
         return jobs;
     }
 
-    public List<JobDetails> getCertainJobAllRuns(String cluster, String user, String jobname) throws IOException {
-        return getCertainJobRunsInTimeInterval(cluster, user, jobname, 0, Long.MAX_VALUE);
+    public List<JobDetails> getCertainJobAllRuns(String cluster, String user, String jobname,boolean getCounter) throws IOException {
+        return getCertainJobRunsInTimeInterval(cluster, user, jobname, 0, Long.MAX_VALUE,getCounter);
     }
 
-    public List<JobDetails> getAllJobInTimeInterval(String cluster, String user) throws IOException {
-        return getAllJobInTimeInterval(cluster,user,0,Long.MAX_VALUE);
+    public List<JobDetails> getAllJobInTimeInterval(String cluster, String user,boolean getCounter) throws IOException {
+        return getAllJobInTimeInterval(cluster,user,0,Long.MAX_VALUE, getCounter);
     }
 
-    public List<JobDetails> getAllJobInTimeInterval(String cluster, String user, long start_time, long end_time) throws IOException {
+    public List<JobDetails> getAllJobInTimeInterval(String cluster, String user,
+                            long start_time, long end_time,boolean getCounter) throws IOException {
         LOG.info(cluster + "/"+user+"/"+start_time+"/"+end_time);
         byte[] rowPrefix = Bytes.toBytes((cluster + Constants.SEP + user + Constants.SEP2));
 
@@ -87,6 +102,11 @@ public class queryJobService {
         byte[] scanEndRow = Bytes.add(rowPrefix, Bytes.toBytes(encodeTS(start_time)));
 
         Scan scan = new Scan();
+        if(getCounter == false){
+            Filter qfilter = new QualifierFilter(CompareFilter.CompareOp.NOT_EQUAL,
+                    new RegexStringComparator(NOCOUNTER_REGEXP));
+            scan.setFilter(qfilter);
+        }
         scan.setStartRow(scanStartRow);
         scan.setStopRow(scanEndRow);
         ResultScanner scanner = historyTable.getScanner(scan);
@@ -134,8 +154,30 @@ public class queryJobService {
         return nameList;
     }
 
+    public JobDetails getJobByJobID(String cluster, String jobId,boolean getCounter) throws IOException {
+        QualifiedJobId qjid = new QualifiedJobId(cluster, jobId);
+        JobDetails job = null;
+        JobKey key = idService.getJobKeyById(qjid);
+        if (key != null) {
+            byte[] historyKey = jobKeyConv.toBytes(key);
+            Get get = new Get(historyKey);
+            if(getCounter == false) {
+                Filter qfilter = new QualifierFilter(CompareFilter.CompareOp.NOT_EQUAL,
+                        new RegexStringComparator(NOCOUNTER_REGEXP));
+                get.setFilter(qfilter);
+            }
+            Result result = historyTable.get(get);
+            if (result != null && !result.isEmpty()) {
+                job = new JobDetails(key);
+                job.populate(result);
+            }
+        }
+        return job;
+    }
+
     public void close() throws IOException {
         historyTable.close();
         taskTable.close();
     }
+
 }

@@ -426,9 +426,11 @@ public class Constants {
    */
   public static final long THIRTY_DAYS_MILLIS = MILLIS_ONE_DAY * 30L;
 
+  public static final String JOB_QUEUE = "job_queue" ;
+  public static final byte[] JOB_QUEUE_BYTES = Bytes.toBytes(JOB_QUEUE);
+
   /** used to indicate the cost of a job is in terms of currency units */
   public static final String JOBCOST = "jobcost" ;
-
   public static final byte[] JOBCOST_BYTES = Bytes.toBytes(JOBCOST);
 
   /** hdfs location where the properties file is placed */
