@@ -15,6 +15,7 @@ limitations under the License.
 */
 package com.twitter.hraven.datasource;
 
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.twitter.hraven.Constants;
@@ -26,6 +27,29 @@ import com.twitter.hraven.util.ByteUtil;
  */
 public class JobKeyConverter implements ByteConverter<JobKey> {
   private JobIdConverter idConv = new JobIdConverter();
+
+  public Put allJobRK(JobKey jobKey){
+      // cluster ! user (SOH) JobName
+      JobId jid = jobKey.getJobId();
+
+      byte[] clusert_user_bytes =
+              Bytes.add(Bytes.toBytes(jobKey.getCluster()),
+                        Constants.SEP_BYTES,
+                      Bytes.toBytes(jobKey.getUserName()));
+      Put p = new Put(
+              Bytes.add(clusert_user_bytes,
+                      Constants.SEP3_BYTES,
+                      Bytes.toBytes(jobKey.getAppId()))
+      );
+
+      if (jobKey == null) {
+          return null;
+      }else{
+            p.add(Constants.INFO_FAM_BYTES,Bytes.toBytes(jid.getJobIdString()),Constants.EMPTY_BYTES);
+      }
+      return p;
+  }
+
 
   /**
    * Returns the byte encoded representation of a JobKey

@@ -713,6 +713,9 @@ public class JobHistoryService {
     JobKeyConverter jkcvrt = new JobKeyConverter();
 
     JobKey jobKey = new JobKey(jobDesc);
+    Put pp = jkcvrt.allJobRK(jobKey);
+    puts.add(pp);
+
     byte[] jobKeyBytes = jkcvrt.toBytes(jobKey);
     byte[] jkByTS = jkcvrt.toBytesSortByTS(jobKey);
 

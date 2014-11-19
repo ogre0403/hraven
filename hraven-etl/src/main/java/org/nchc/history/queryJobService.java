@@ -6,16 +6,15 @@ import com.twitter.hraven.JobKey;
 import com.twitter.hraven.datasource.JobHistoryByIdService;
 import com.twitter.hraven.datasource.JobKeyConverter;
 import com.twitter.hraven.datasource.TaskKeyConverter;
+import com.twitter.hraven.util.ByteUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -104,12 +103,35 @@ public class queryJobService {
 
 
 
-    public List<String> getCertainJobAllRunsId(String cluster, String user, String jobname){
-        return null;
+    public List<String> getCertainJobAllRunsId(String cluster, String user, String jobname) throws IOException {
+        List<String> runsList = new LinkedList<String>();
+        byte[] tmprow = Bytes.add(Bytes.toBytes(cluster), Constants.SEP_BYTES,Bytes.toBytes(user));
+        byte[] row = Bytes.add(tmprow,Constants.SEP3_BYTES,Bytes.toBytes(jobname));
+        Get g = new Get(row);
+        Result r = historyTable.get(g);
+        if(!r.isEmpty()){
+            Iterator<byte[]> iter = r.getFamilyMap(Constants.INFO_FAM_BYTES).navigableKeySet().iterator();
+            while(iter.hasNext()){
+                runsList.add(Bytes.toString(iter.next()));
+            }
+        }
+        return runsList;
     }
 
-    public List<String> getAllJobName(String cluster, String user){
-        return null;
+    public List<String> getAllJobName(String cluster, String user) throws IOException {
+        List<String> nameList = new LinkedList<String>();
+        byte[] tmprow = Bytes.add(Bytes.toBytes(cluster), Constants.SEP_BYTES,Bytes.toBytes(user));
+        byte[] start = Bytes.add(tmprow,Constants.SEP3_BYTES);
+        byte[] end = Bytes.add(tmprow,Constants.SEP4_BYTES);
+        Scan scan = new Scan();
+        scan.setStartRow(start);
+        scan.setStopRow(end);
+        ResultScanner rs  = historyTable.getScanner(scan);
+        for(Result r:rs){
+            byte[] row = r.getRow();
+            nameList.add(Bytes.toString(ByteUtil.split(row, Constants.SEP3_BYTES)[1]));
+        }
+        return nameList;
     }
 
     public void close() throws IOException {

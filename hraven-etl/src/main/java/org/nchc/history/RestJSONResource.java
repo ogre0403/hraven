@@ -117,6 +117,25 @@ public class RestJSONResource {
         return getQueryService().getAllJobInTimeInterval(cluster,user,start_time,end_time);
     }
 
+    @GET
+    @Path("jobList/{cluster}/{user}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getJobList(@PathParam("cluster") String cluster,
+                                   @PathParam("user") String user) throws IOException {
+        return getQueryService().getAllJobName(cluster,user);
+    }
+
+
+    @GET
+    @Path("runList/{cluster}/{user}/{jobname}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getRunList(
+            @PathParam("cluster") String cluster,
+            @PathParam("user") String user,
+            @PathParam("jobname") String jobname)throws IOException {
+        return getQueryService().getCertainJobAllRunsId(cluster,user,jobname);
+    }
+
   @GET
   @Path("job/{cluster}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -125,7 +144,11 @@ public class RestJSONResource {
     LOG.info("Fetching JobDetails for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
 
-      JobDetails jobDetails = getJobHistoryService().getJobByJobID(cluster, jobId);
+    JobDetails jobDetails =
+            (jobId == null)?
+            null:
+            getJobHistoryService().getJobByJobID(cluster, jobId);
+
     timer.stop();
     if (jobDetails != null) {
       LOG.info("For job/{cluster}/{jobId} with input query:" + " job/" + cluster + SLASH + jobId
@@ -145,6 +168,7 @@ public class RestJSONResource {
                                            @PathParam("jobId") String jobId) throws IOException {
     LOG.info("Fetching tasks info for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
+
     JobDetails jobDetails = getJobHistoryService().getJobByJobID(cluster, jobId, true);
     timer.stop();
     List<TaskDetails> tasks = jobDetails.getTasks();

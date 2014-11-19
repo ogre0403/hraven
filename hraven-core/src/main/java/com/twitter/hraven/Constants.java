@@ -36,6 +36,14 @@ public class Constants {
   public static final String SEP2 = "" + SEP_CHAR2;
   public static final byte[] SEP2_BYTES = Bytes.toBytes(SEP2);
 
+  public static final char SEP_CHAR3 = 1;
+  public static final String SEP3 = "" + SEP_CHAR3;
+  public static final byte[] SEP3_BYTES = Bytes.toBytes(SEP3);
+
+  public static final char SEP_CHAR4 = 2;
+  public static final String SEP4 = "" + SEP_CHAR4;
+  public static final byte[] SEP4_BYTES = Bytes.toBytes(SEP4);
+
   // common default values
   public static final byte[] EMPTY_BYTES = new byte[0];
   public static final byte[] ZERO_INT_BYTES = Bytes.toBytes(0);
