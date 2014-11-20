@@ -22,21 +22,26 @@ import org.apache.commons.cli.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.handler.ContextHandlerCollection;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.thread.QueuedThreadPool;
+
+import java.net.URI;
+import java.net.URL;
 
 /**
  * Simple REST server that spawns an embedded Jetty instance to service requests
  * @deprecated in favor of {@link com.twitter.hraven.rest.HravenRestServer}
  */
 public class RestServer extends AbstractIdleService {
-  /** Default TCP port for the server to listen on */
-  public static final int DEFAULT_PORT = 8080;
-  /** Default IP address for the server to listen on */
-  public static final String DEFAULT_ADDRESS = "0.0.0.0";
+  private static final int DEFAULT_PORT = 8080;
+  private static final String DEFAULT_ADDRESS = "0.0.0.0";
+  private static final String WEBROOT_INDEX = "/webroot/";
 
   private static final Log LOG = LogFactory.getLog(RestServer.class);
 
@@ -49,36 +54,46 @@ public class RestServer extends AbstractIdleService {
     this.port = port;
   }
 
-  @Override
-  protected void startUp() throws Exception {
-    // setup the jetty config
-    ServletHolder sh = new ServletHolder(ServletContainer.class);
-    sh.setInitParameter("com.sun.jersey.config.property.packages", "org.nchc.history");
-    sh.setInitParameter(JSONConfiguration.FEATURE_POJO_MAPPING, "true");
+    @Override
+    protected void startUp() throws Exception {
+        server = new Server();
 
-    server = new Server();
+        //set default max thread number to 250
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        server.setThreadPool(threadPool);
+        server.setSendServerVersion(false);
+        server.setSendDateHeader(false);
+        server.setStopAtShutdown(true);
 
-    Connector connector = new SelectChannelConnector();
-    connector.setPort(this.port);
-    connector.setHost(address);
+        // set ip and port
+        Connector connector = new SelectChannelConnector();
+        connector.setPort(this.port);
+        connector.setHost(address);
+        server.addConnector(connector);
 
-    server.addConnector(connector);
+        // static html context
+        URL indexUri = this.getClass().getResource(WEBROOT_INDEX);
+        URI baseUri = indexUri.toURI();
+        LOG.info("Base URI: " + baseUri);
+        WebAppContext wc = new WebAppContext();
+        wc.setResourceBase(baseUri.toASCIIString());
+        wc.setContextPath("/runJetty");
 
-    // TODO: in the future we may want to provide settings for the min and max threads
-    // Jetty sets the default max thread number to 250, if we don't set it.
-    //
-    QueuedThreadPool threadPool = new QueuedThreadPool();
-    server.setThreadPool(threadPool);
-    server.setSendServerVersion(false);
-    server.setSendDateHeader(false);
-    server.setStopAtShutdown(true);
-    // set up context
-    Context context = new Context(server, "/", Context.SESSIONS);
-    context.addServlet(sh, "/*");
+        // Restful context
+        ServletHolder sh = new ServletHolder(ServletContainer.class);
+        sh.setInitParameter("com.sun.jersey.config.property.packages", "org.nchc.history");
+        sh.setInitParameter(JSONConfiguration.FEATURE_POJO_MAPPING, "true");
+        Context context = new Context(server, "/", Context.SESSIONS);
+        context.setResourceBase(baseUri.toASCIIString());
+        context.addServlet(sh, "/*");
 
-    // start server
-    server.start();
-  }
+        //add web and restful context
+        server.setHandlers(new Handler[]{wc,context});
+        // start server
+        server.start();
+    }
+
+
 
   @Override
   protected void shutDown() throws Exception {

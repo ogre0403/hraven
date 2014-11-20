@@ -12,6 +12,7 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.jruby.RubyProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -85,7 +86,7 @@ public class TestRealData {
         }
     }
 
-    @Test
+    @Ignore
     public void testFilter() throws IOException{
         byte[] start = ByteUtil.join(Constants.SEP_BYTES,Bytes.toBytes("NCHC"),Bytes.toBytes("hdadm"),Bytes.toBytes("TeraGen"));
         byte[] end = ByteUtil.join(Constants.SEP_BYTES,Bytes.toBytes("NCHC"),Bytes.toBytes("hdadm"),Bytes.toBytes("U"));
@@ -110,6 +111,14 @@ public class TestRealData {
             }
         }
     }
+
+    @Test
+    public void testHttpServer() throws Exception {
+        RestServer server = new RestServer("0.0.0.0", 8080);
+        server.startUp();
+        Thread.sleep(100000000);
+    }
+
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         table.close();
