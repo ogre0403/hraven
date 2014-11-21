@@ -1,20 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-<title> The First Example: Hello, World </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Highcharts Example</title>
+
+	<link href="./js/main.css" rel="stylesheet"> 
+    <!-- 1. Add these JavaScript inclusions in the head of your page -->
+    <script type="text/javascript" src="./js/jquery.min.js"></script>
+    <script type="text/javascript" src="./js/highcharts.js"></script>
+	<script type="text/javascript" src="http://img3.tieyou.com/js/jquery.idTabs.min.js"></script>
+
+	<!-- 2. Add the JavaScript to initialize the chart on document ready-->
+	<script type="text/javascript" src="./js/service.js"></script>
+
+
 </head>
 <body>
-<h2> This line is HTML </h2>
 
-<script language="JavaScript">
 
-document.write("Hello, World.This sentence is written using JavaScript.");
 
-</script>
-<noscript>
-Sorry, but your browser doesn't run JavaScript.
-</noscript>
 
-<h2> This line is HTML </h2>
+
+
+<!-- 3. Add the container -->
+<div id="main"> 
+	<ul class ="idTabs">
+		<li><a href="#plot1">List User's all Job Runs</a></li>
+        <li><a href="#plot2">List Job all Runs</a></li>		
+	</ul>
+</div>
+
+<div id="plot1">	
+	<div id="container1" style="width: 70%; height: 400px; margin: 0 auto"></div>	
+	<div id="container2" style="width: 70%; height: 400px; margin: 0 auto"></div>
+	<div id="container3" style="width: 70%; height: 400px; margin: 0 auto"></div>
+</div>
+
+<div id="plot2">
+	<div id="container4" style="width: 70%; height: 400px; margin: 0 auto"></div>	
+	<div id="container5" style="width: 70%; height: 400px; margin: 0 auto"></div>
+	<div id="container6" style="width: 70%; height: 400px; margin: 0 auto"></div>
+</div>
 </body>
 </html>
-
