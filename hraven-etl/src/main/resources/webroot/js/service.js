@@ -12,6 +12,13 @@ $(document).ready(function() {
     $("#jobet").datetimepicker().button();
     $("#typeToggle2").buttonset();
 
+    $("#job").selectmenu({
+        create: function( event, ui ) {
+            var option = listJobName("user");
+            $(this).empty().append(option);
+        }
+    });
+
     function timeConverter(UNIX_timestamp){
       var a = new Date(UNIX_timestamp);
       var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
@@ -58,6 +65,12 @@ $(document).ready(function() {
         //['cost']  [...]
         //['time']  [...]
         //['MbMs']  [...]
+    }
+
+    function listJobName(user){
+        //TODO: return list of job Name
+        var option = $('<option></option>').attr("value", "option value").text(user);
+        return option;
     }
 
     function plot(Xaxis, Yaxis, showPara){
@@ -141,8 +154,4 @@ $(document).ready(function() {
             plot(dataarray[0],dataarray[3],para);
         }
     );
-
-
-
-
 });

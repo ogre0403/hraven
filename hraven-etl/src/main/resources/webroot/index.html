@@ -4,7 +4,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>NCHC MR Job Usage</title>
 
-	<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/themes/blitzer/jquery-ui.css" rel="stylesheet">
+	<link href="http://code.jquery.com/ui/1.11.2/themes/blitzer/jquery-ui.css" rel="stylesheet">
+	<link href="./css/my_test.css" rel="stylesheet">
 	<link href="./css/jquery-ui-timepicker-addon.css" rel="stylesheet">
 
   	<script src="./js/jquery.min.js" type="text/javascript" ></script>
@@ -26,7 +27,7 @@
 	</ul>
 	<div id="plot1">
 		<div id="query">
-			<input id ="user" type="text"/>
+			<input id ="user" type="text" />
 			<input id="startdatetimepicker1" type="text" />
 			<input id="enddatetimepicker" type="text" />
 			<button id="qqq">Query</button>
@@ -42,7 +43,9 @@
 	<div id="plot2">
 		<div id="queryJob">
 			<input id ="jobuser" type="text"/>
-			<input id ="job" type="text"/>
+			<select id="job">
+				<option selected="selected">-- Select a Job --</option>
+			</select>
 			<input id="jobst" type="text" />
 			<input id="jobet" type="text" />
 			<button id="qb">Query</button>
