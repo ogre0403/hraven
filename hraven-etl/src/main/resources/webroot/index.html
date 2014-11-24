@@ -23,13 +23,14 @@
 <div id="main">
 	<ul class ="idTabs">
 		<li><a href="#plot1">List User's all Job Runs</a></li>
-        <li><a href="#plot2">List Job all Runs</a></li>		
+        <li><a href="#plot2">List Job all Runs</a></li>
+		<li><a href="#jobdetail">Show Job Detail</a></li>
 	</ul>
 	<div id="plot1">
 		<div id="query">
 			<input id ="user" type="text" />
-			<input id="startdatetimepicker1" type="text" />
-			<input id="enddatetimepicker" type="text" />
+			<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
+			<input id="enddatetimepicker" type="text" value="-- select end time --"/>
 			<button id="qqq">Query</button>
 		</div>
 		<div id="typeToggle" style="position: absolute; left: 34%">
@@ -44,18 +45,31 @@
 		<div id="queryJob">
 			<input id ="jobuser" type="text"/>
 			<select id="job">
-				<option selected="selected">-- Select a Job --</option>
+				<option selected="selected" value="1">-- Select a Job --</option>
 			</select>
-			<input id="jobst" type="text" />
-			<input id="jobet" type="text" />
+			<input id="jobst" type="text" value="-- select start time --"/>
+			<input id="jobet" type="text" value="-- select end time --"/>
 			<button id="qb">Query</button>
 		</div>
 		<div id="typeToggle2" style="position: absolute; left: 34%">
-			<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost">Cost</label>
-			<input type="radio" id="btntime1" name="radio" /><label for="btntime">Run Time</label>
-			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms">MbMillis</label>
+			<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
+			<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
+			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
 		</div>
-		<div id="container2" style="width: 70%; height: 400px; margin: 0 auto"></div>
+		<div id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
+	</div>
+
+	<div id="jobdetail">
+		<div id="query3">
+			<input id ="user3" type="text" />
+			<select id="joblist">
+				<option selected="selected" value="1">-- Select a Job --</option>
+			</select>
+			<select id="runlist">
+				<option selected="selected" value="1">-- Select a run --</option>
+			</select>
+			<button id="q3">Query</button>
+		</div>
 	</div>
 </div>
 

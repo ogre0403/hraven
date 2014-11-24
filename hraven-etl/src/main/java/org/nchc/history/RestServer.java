@@ -77,8 +77,8 @@ public class RestServer extends AbstractIdleService {
        // LOG.info("Base URI: " + baseUri);
         WebAppContext wc = new WebAppContext();
         LOG.info("baseUri = " + baseUri.toASCIIString());
-        //wc.setResourceBase(baseUri.toASCIIString());
-        wc.setResourceBase(".");
+        wc.setResourceBase(baseUri.toASCIIString());
+//        wc.setResourceBase(".");
         wc.setContextPath("/runJetty");
 
         // Restful context
