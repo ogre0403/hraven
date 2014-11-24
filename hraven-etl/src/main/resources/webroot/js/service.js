@@ -14,11 +14,56 @@ $(document).ready(function() {
 
     $("#jobuser").button();
     $("#qb").button();
-    $("#job").button();
     $("#jobst").datetimepicker().button();
     $("#jobet").datetimepicker().button();
     $("#typeToggle2").buttonset();
 
+    $("#user3").button();
+    $("#joblist").selectmenu();
+    $("#runlist").selectmenu();
+
+
+    function updateMenu(json,str_id){
+        $(str_id).empty();
+        if (json.length > 0){
+            $.each(json, function(key,value) {
+               $(str_id)
+                .append($("<option></option>")
+                .attr("value",value)
+                .text(value));
+            });
+           $(str_id).selectmenu('refresh');
+        }
+    }
+
+    $("#joblist").selectmenu({
+        open: function( event, ui ) {
+            var user = $("#user3").val();
+            $.ajax({
+                url: SERVER+RESTPREFIX+"jobList/"+CLUSTER+"/"+user,
+                type:"GET",
+                dataType:'json',
+                success: function(json){
+                  updateMenu(json, "#joblist");
+                }
+            });
+        }
+    });
+
+    $("#runlist").selectmenu({
+        open: function( event, ui ) {
+            var user = $("#user3").val();
+            var job = $("#joblist").val();
+             $.ajax({
+                url: SERVER+RESTPREFIX+"runList/"+CLUSTER+"/"+user+"/"+job,
+                type:"GET",
+                dataType:'json',
+                success: function(json){
+                  updateMenu(json, "#runlist");
+                }
+             });
+        }
+    });
 
     $("#job").selectmenu({
         open: function( event, ui ) {
@@ -29,25 +74,11 @@ $(document).ready(function() {
                 type:"GET",
                 dataType:'json',
                 success: function(json){
-                    updateMenu(json);
+                    updateMenu(json,"#job");
                 }
             });
         }
     });
-
-    function updateMenu(json){
-        $("#job").empty();
-        console.log(json.length);
-        if (json.length > 0){
-            $.each(json, function(key,value) {
-                $('#job')
-                .append($("<option></option>")
-                .attr("value",value)
-                .text(value));
-            });
-            $("#job").selectmenu('refresh');
-        }
-    }
 
     function timeConverter(UNIX_timestamp){
       var a = new Date(UNIX_timestamp);
@@ -67,14 +98,16 @@ $(document).ready(function() {
         // However, Date() ctor is
         // Date(year, month, day, hours, minutes, seconds, milliseconds);
         var d = HumanTime.match(/\d+/g); // extract date parts
+        if(d == null)
+            return -1;
         return +new Date(d[2], d[0] - 1, d[1], d[3], d[4], 0); // build Date object
     }
 
     function queryUser(user, start_ts,end_ts){
-        console.log(user + start_ts + end_ts);
+//        console.log(user + start_ts + end_ts);
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
-        console.log(user +"/"+ ts1 + "/"+ts2);
+//        console.log(user +"/"+ ts1 + "/"+ts2);
 
         dataarray =[[],[],[],[]]; //clear query result array
 
@@ -101,10 +134,10 @@ $(document).ready(function() {
     }
 
     function queryJob(user,job,start_ts,end_ts){
-        console.log(user + job + start_ts + end_ts);
+//        console.log(user + job + start_ts + end_ts);
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
-        console.log(user +"/"+job+"/"+ ts1 + "/"+ts2);
+//        console.log(user +"/"+job+"/"+ ts1 + "/"+ts2);
         dataarray =[[],[],[],[]]; //clear query result array
          $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/"+job+"/?start="+ts1+"&end="+ts2, function(json){
              for(var k in json) {
@@ -126,6 +159,31 @@ $(document).ready(function() {
          //TODO: return 2d array instead of filling result array
     }
 
+    function queryJobDetail(run){
+        $.ajax({
+            url: SERVER+RESTPREFIX+"job/"+CLUSTER+"/?jobId="+run,
+            type:"GET",
+            dataType:'json',
+            success: function(json){
+                detailTable(json);
+            }
+        });
+    }
+
+    function detailTable(json){
+        //TODO: show in a table format
+        console.log(json['status']);
+        console.log(json['jobName']);
+        console.log(json['user']);
+        console.log(json['queue']);
+        console.log(json['submitTime']);
+        console.log(json['finishTime']);
+        console.log(json['runTime']);
+        console.log(json['megabyteMillis']);
+        console.log(json['cost']);
+        console.log(json['totalMaps']+"/"+json['finishedMaps']+"/"+json['failedMaps']);
+        console.log(json['totalReduces']+"/"+json['finishedReduces']+"/"+json['failedReduces']);
+    }
 
     function plot(Xaxis, Yaxis, showPara){
         var chart = new Highcharts.Chart({
@@ -182,6 +240,11 @@ $(document).ready(function() {
             var v3 = $("#jobst").val();
             var v4 = $("#jobet").val();
             queryJob(v1,v2,v3,v4);
+     });
+
+     $("#q3").button().click(function(){
+         var v3 = $("#runlist").val();
+         queryJobDetail(v3);
      });
 
     $("#btncost").click(function () {
