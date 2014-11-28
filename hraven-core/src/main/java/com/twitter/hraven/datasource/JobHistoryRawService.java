@@ -53,7 +53,7 @@ public class JobHistoryRawService {
   /**
    * Used to store the processRecords in HBase
    */
-  private final HTable rawTable;
+  protected final HTable rawTable;
 
   /**
    * Constructor. Note that caller is responsible to {@link #close()} created

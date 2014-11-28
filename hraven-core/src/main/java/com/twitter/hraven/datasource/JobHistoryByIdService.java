@@ -32,13 +32,13 @@ import com.twitter.hraven.QualifiedJobId;
  * 
  */
 public class JobHistoryByIdService {
-  private JobKeyConverter jobKeyConv = new JobKeyConverter();
-  private QualifiedJobIdConverter jobIdConv = new QualifiedJobIdConverter();
+  protected JobKeyConverter jobKeyConv = new JobKeyConverter();
+  protected QualifiedJobIdConverter jobIdConv = new QualifiedJobIdConverter();
 
   /**
    * Used to store the job to jobHistoryKey index in.
    */
-  private final HTable historyByJobIdTable;
+  protected final HTable historyByJobIdTable;
 
   public JobHistoryByIdService(Configuration myHBaseConf) throws IOException {
     historyByJobIdTable = new HTable(myHBaseConf,

@@ -114,6 +114,7 @@
         <directory>src/test/resources/</directory>
         <includes>
           <include>log4j.properties</include>
+          <include>*</include>
           <include>done/*</include>
         </includes>
       </testResource>
@@ -193,6 +194,7 @@
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
       <version>${log4j.version}</version>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <groupId>javax.jms</groupId>
@@ -213,34 +215,24 @@
       </exclusions>
     </dependency>
 
-    <dependency>
+      <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-core</artifactId>
-      <version>${hadoop.version}</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>hsqldb</groupId>
-          <artifactId>hsqldb</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.kosmosfs</groupId>
-          <artifactId>kfs</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jdt</groupId>
-          <artifactId>core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.java.dev.jets3t</groupId>
-          <artifactId>jets3t</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>oro</groupId>
-          <artifactId>oro</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>hadoop-common</artifactId>
+      <version>2.0.0-cdh4.7.0</version>
+          <scope>provided</scope>
+  </dependency>
+    <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-mapreduce-client-common</artifactId>
+        <version>2.0.0-cdh4.7.0</version>
+        <scope>provided</scope>
     </dependency>
+      <dependency>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-core</artifactId>
+          <version>2.0.0-mr1-cdh4.7.0</version>
+          <scope>provided</scope>
+      </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase</artifactId>
@@ -327,7 +319,7 @@
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-test</artifactId>
+      <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
       <version>${hadoop.version}</version>
       <scope>test</scope>
     </dependency>

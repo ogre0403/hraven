@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>NCHC MR Job Usage</title>
+
+	<link href="http://code.jquery.com/ui/1.11.2/themes/blitzer/jquery-ui.css" rel="stylesheet">
+	<link href="./css/my_test.css" rel="stylesheet">
+	<link href="./css/jquery-ui-timepicker-addon.css" rel="stylesheet">
+
+  	<script src="./js/jquery.min.js" type="text/javascript" ></script>
+  	<script src="./js/jquery-ui.min.js" type="text/javascript" ></script>
+	<script src="./js/jquery-ui-timepicker-addon.js" type="text/javascript"></script>
+	<script src="./js/jquery-ui-sliderAccess.js" type="text/javascript"></script>
+	<script src="./js/jquery.idTabs.min.js" type="text/javascript" ></script>
+	<script src="./js/highcharts.js" type="text/javascript"></script>
+	<!-- 2. Add the JavaScript to initialize the chart on document ready-->
+	<script src="./js/service.js" type="text/javascript" ></script>
+
+</head>
+<body>
+
+<div id="main">
+	<ul class ="idTabs">
+		<li><a href="#plot1">List User's all Job Runs</a></li>
+        <li><a href="#plot2">List Job all Runs</a></li>
+		<li><a href="#jobdetail">Show Job Detail</a></li>
+	</ul>
+	<div id="plot1">
+		<div id="query">
+			<input id ="user" type="text" />
+			<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
+			<input id="enddatetimepicker" type="text" value="-- select end time --"/>
+			<button id="qqq">Query</button>
+		</div>
+		<div id="typeToggle" style="position: absolute; left: 34%">
+			<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
+			<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
+			<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+		</div>
+		<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
+	</div>
+
+	<div id="plot2">
+		<div id="queryJob">
+			<input id ="jobuser" type="text"/>
+			<select id="job">
+				<option selected="selected" value="1">-- Select a Job --</option>
+			</select>
+			<input id="jobst" type="text" value="-- select start time --"/>
+			<input id="jobet" type="text" value="-- select end time --"/>
+			<button id="qb">Query</button>
+		</div>
+		<div id="typeToggle2" style="position: absolute; left: 34%">
+			<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
+			<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
+			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
+		</div>
+		<div id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
+	</div>
+
+	<div id="jobdetail">
+		<div id="query3">
+			<input id ="user3" type="text" />
+			<select id="joblist">
+				<option selected="selected" value="1">-- Select a Job --</option>
+			</select>
+			<select id="runlist">
+				<option selected="selected" value="1">-- Select a run --</option>
+			</select>
+			<button id="q3">Query</button>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

@@ -426,4 +426,7 @@ public class Constants {
 
   /** name of the properties file used for cluster to cluster identifier mapping */
   public static final String HRAVEN_CLUSTER_PROPERTIES_FILENAME = "hRavenClusters.properties";
+
+  public static final String JOB_QUEUE = "job_queue" ;
+  public static final byte[] JOB_QUEUE_BYTES = Bytes.toBytes(JOB_QUEUE);
 }

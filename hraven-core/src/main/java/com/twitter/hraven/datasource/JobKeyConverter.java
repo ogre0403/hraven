@@ -25,7 +25,7 @@ import com.twitter.hraven.util.ByteUtil;
 /**
  */
 public class JobKeyConverter implements ByteConverter<JobKey> {
-  private JobIdConverter idConv = new JobIdConverter();
+  protected JobIdConverter idConv = new JobIdConverter();
 
   /**
    * Returns the byte encoded representation of a JobKey
