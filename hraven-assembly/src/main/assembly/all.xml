@@ -40,6 +40,13 @@
     </fileSet>
     <!-- Include top level conf directory -->
     <fileSet>
+      <directory>${project.basedir}/../web</directory>
+      <outputDirectory>web</outputDirectory>
+      <fileMode>0644</fileMode>
+      <directoryMode>0755</directoryMode>
+    </fileSet>
+    <!-- Include top level conf directory -->
+    <fileSet>
       <directory>${project.basedir}/../conf</directory>
       <outputDirectory>conf</outputDirectory>
       <fileMode>0644</fileMode>

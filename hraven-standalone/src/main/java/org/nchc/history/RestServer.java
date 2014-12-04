@@ -33,6 +33,8 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Simple REST server that spawns an embedded Jetty instance to service requests
@@ -41,7 +43,7 @@ import java.net.URL;
 public class RestServer extends AbstractIdleService {
   private static final int DEFAULT_PORT = 8080;
   private static final String DEFAULT_ADDRESS = "0.0.0.0";
-  private static final String WEBROOT_INDEX = "/webroot/";
+  private static final String WEBROOT_INDEX = "web";
 
   private static final Log LOG = LogFactory.getLog(RestServer.class);
 
@@ -72,13 +74,20 @@ public class RestServer extends AbstractIdleService {
         server.addConnector(connector);
 
         // static html context
+        /*
         URL indexUri = this.getClass().getResource(WEBROOT_INDEX);
         URI baseUri = indexUri.toURI();
-       // LOG.info("Base URI: " + baseUri);
-        WebAppContext wc = new WebAppContext();
+
         LOG.info("baseUri = " + baseUri.toASCIIString());
-        wc.setResourceBase(baseUri.toASCIIString());
-//        wc.setResourceBase(".");
+        LOG.info("indexUri = " + indexUri.toString());
+        */
+        String jarpath = RestServer.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        Path p1 = Paths.get(jarpath);
+        Path p2 = p1.getParent().getParent().resolve(WEBROOT_INDEX);
+        LOG.info("web root = "+p2.toUri().toASCIIString());
+
+        WebAppContext wc = new WebAppContext();
+        wc.setResourceBase(p2.toUri().toASCIIString());
         wc.setContextPath("/runJetty");
 
         // Restful context
@@ -86,7 +95,7 @@ public class RestServer extends AbstractIdleService {
         sh.setInitParameter("com.sun.jersey.config.property.packages", "org.nchc.history");
         sh.setInitParameter(JSONConfiguration.FEATURE_POJO_MAPPING, "true");
         Context context = new Context(server, "/", Context.SESSIONS);
-        context.setResourceBase(baseUri.toASCIIString());
+//        context.setResourceBase(baseUri.toASCIIString());
         context.addServlet(sh, "/*");
 
         //add web and restful context

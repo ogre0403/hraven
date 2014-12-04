@@ -117,7 +117,7 @@ public class TestRealData {
     public void testHttpServer() throws Exception {
         RestServer server = new RestServer("0.0.0.0", 8080);
         server.startUp();
-        Thread.sleep(100000000);
+//        Thread.sleep(100000000);
     }
 
     @AfterClass
