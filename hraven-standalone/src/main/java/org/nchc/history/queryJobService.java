@@ -17,8 +17,8 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.nchc.ExtendConstants;
-import org.nchc.ExtendJobKeyConverter;
+import org.nchc.extend.ExtendConstants;
+import org.nchc.extend.ExtendJobKeyConverter;
 
 import java.io.IOException;
 import java.util.Iterator;

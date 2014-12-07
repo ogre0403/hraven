@@ -11,7 +11,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IOUtils;
-import org.nchc.ExtendJobKeyConverter;
+import org.nchc.extend.ExtendJobKeyConverter;
 
 import java.io.IOException;
 import java.io.InputStream;

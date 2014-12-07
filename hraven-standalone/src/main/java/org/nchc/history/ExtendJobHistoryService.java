@@ -8,8 +8,8 @@ import com.twitter.hraven.util.HadoopConfUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.nchc.ExtendConstants;
-import org.nchc.ExtendJobKeyConverter;
+import org.nchc.extend.ExtendConstants;
+import org.nchc.extend.ExtendJobKeyConverter;
 
 import java.io.IOException;
 import java.util.Iterator;

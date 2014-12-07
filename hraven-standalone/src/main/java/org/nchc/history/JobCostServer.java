@@ -42,9 +42,9 @@
     import org.apache.hadoop.util.ToolRunner;
     import org.apache.log4j.Level;
     import org.apache.log4j.Logger;
-    import org.nchc.ExtendJobHistoryByIdService;
-    import org.nchc.ExtendJobHistoryFileParserHadoop2;
-    import org.nchc.ExtendJobHistoryRawService;
+    import org.nchc.extend.ExtendJobHistoryByIdService;
+    import org.nchc.extend.ExtendJobHistoryFileParserHadoop2;
+    import org.nchc.extend.ExtendJobHistoryRawService;
 
     /**
      * Command line tool that can be run on a periodic basis (like daily, hourly, or
