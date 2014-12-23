@@ -80,6 +80,15 @@ $(document).ready(function() {
         }
     });
 
+    function exec_duration(ms_duration){
+        t = Math.floor(ms_duration/1000);;
+        h=""+(t/36000|0)+(t/3600%10|0);
+        m=""+(t%3600/600|0)+(t%3600/60%10|0);
+        s=""+(t%60/10|0)+(t%60%10);
+        T=h+"時"+m+"分"+s+"秒";
+        return T;
+    }
+
     function timeConverter(UNIX_timestamp){
       var a = new Date(UNIX_timestamp);
       var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
@@ -103,6 +112,16 @@ $(document).ready(function() {
         return +new Date(d[2], d[0] - 1, d[1], d[3], d[4], 0); // build Date object
     }
 
+
+    function shortStr(orig, len){
+        var sl = orig.length;
+        console.log(sl);
+        if(sl < len)
+            return orig;
+        else
+            return orig.substring(0,len-3)+'...';
+    }
+
     function queryUser(user, start_ts,end_ts){
 //        console.log(user + start_ts + end_ts);
         var ts1 = convertToTS(start_ts);
@@ -115,7 +134,7 @@ $(document).ready(function() {
         //$.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user, function(json){
         $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/?start="+ts1+"&end="+ts2, function(json){
             for(var k in json) {
-                dataarray[0][k] = json[k]['jobName'];
+                dataarray[0][k] = shortStr(json[k]['jobName'],13);
                 dataarray[1][k]  =json[k]['cost'];
                 dataarray[2][k] =json[k]['runTime'];
                 dataarray[3][k]  = json[k]['megabyteMillis'];
@@ -165,7 +184,7 @@ $(document).ready(function() {
             type:"GET",
             dataType:'json',
             success: function(json){
-                detailTable(json);
+                detailTable2(json);
             }
         });
     }
@@ -183,6 +202,28 @@ $(document).ready(function() {
         console.log(json['cost']);
         console.log(json['totalMaps']+"/"+json['finishedMaps']+"/"+json['failedMaps']);
         console.log(json['totalReduces']+"/"+json['finishedReduces']+"/"+json['failedReduces']);
+    }
+
+    function detailTable2(json){
+        cost = Math.round(json['cost']*100)/100;
+        run_time = exec_duration(json['runTime']);
+        submitTime = timeConverter(json['submitTime']);
+        finishTime = timeConverter(json['finishTime']);
+
+        $("#detailTable table tbody").children().eq(0).children().eq(1).replaceWith("<td>"+json['status']+"</td>"); // Jobname
+        $("#detailTable table tbody").children().eq(0).children().eq(3).replaceWith("<td>"+json['jobName']+"</td>"); // Job status
+        $("#detailTable table tbody").children().eq(1).children().eq(1).replaceWith("<td>"+json['user']+"</td>"); // User
+        $("#detailTable table tbody").children().eq(1).children().eq(3).replaceWith("<td>"+json['queue']+"</td>"); // Queue
+        $("#detailTable table tbody").children().eq(2).children().eq(1).replaceWith("<td>"+submitTime+"</td>"); // submit time
+        $("#detailTable table tbody").children().eq(2).children().eq(3).replaceWith("<td>"+finishTime+"</td>"); // finish time
+        $("#detailTable table tbody").children().eq(3).children().eq(1).replaceWith("<td>"+run_time+"</td>"); // run time
+        $("#detailTable table tbody").children().eq(3).children().eq(3).replaceWith("<td>"+cost+"</td>"); // cost
+        $("#detailTable table tbody").children().eq(4).children().eq(1).replaceWith("<td>"+json['totalMaps']+"</td>"); // total map
+        $("#detailTable table tbody").children().eq(4).children().eq(3).replaceWith("<td>"+json['totalReduces']+"</td>"); // total reduce
+        $("#detailTable table tbody").children().eq(5).children().eq(1).replaceWith("<td>"+json['finishedMaps']+"</td>"); // finish map
+        $("#detailTable table tbody").children().eq(5).children().eq(3).replaceWith("<td>"+json['finishedReduces']+"</td>"); // finish reduce
+        $("#detailTable table tbody").children().eq(6).children().eq(1).replaceWith("<td>"+json['failedMaps']+"</td>"); // failed map
+        $("#detailTable table tbody").children().eq(6).children().eq(3).replaceWith("<td>"+json['failedReduces']+"</td>"); // failed reduce
     }
 
     function plot(Xaxis, Yaxis, showPara){
@@ -227,6 +268,7 @@ $(document).ready(function() {
 
 
     $("#user").button();
+
     $("#qqq").button().click(function(){
         var v1 = $("#user").val();
         var v2 = $("#startdatetimepicker1").val();
@@ -245,6 +287,7 @@ $(document).ready(function() {
      $("#q3").button().click(function(){
          var v3 = $("#runlist").val();
          queryJobDetail(v3);
+         //detailTable2();
      });
 
     $("#btncost").click(function () {

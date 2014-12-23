@@ -5,8 +5,8 @@
     <title>NCHC MR Job Usage</title>
 
 	<!--<link href="http://code.jquery.com/ui/1.11.2/themes/blitzer/jquery-ui.css" rel="stylesheet">-->
-	<link href="./css/jquery-ui.css" rel="stylesheet">
 	<link href="./css/my_test.css" rel="stylesheet">
+	<link href="./css/jquery-ui.css" rel="stylesheet">
 	<link href="./css/jquery-ui-timepicker-addon.css" rel="stylesheet">
 
   	<script src="./js/jquery.min.js" type="text/javascript" ></script>
@@ -27,6 +27,86 @@
         <li><a href="#plot2">List Job all Runs</a></li>
 		<li><a href="#jobdetail">Show Job Detail</a></li>
 	</ul>
+	<!--
+	<div id="test">
+		<div class="left">
+			<div>
+				<input id ="user" type="text" />
+			</div>
+			</p>
+			<div>
+				<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
+			</div>
+			</p>
+			<div>
+				<input id="enddatetimepicker" type="text" value="-- select end time --"/>
+			</div>
+			</p>
+			<div>
+				<button id="qqq">Query</button>
+			</div>
+			<div class="clear"></div>
+		</div>
+		<div class="right">
+			<div id="typeToggle">
+				<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
+				<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
+				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+			</div>
+			<div id="container1" >
+
+			</div>
+			<div class="clear"></div>
+		</div>
+		<div class="clear"></div>
+	</div>
+-->
+	<div id="plot1">
+		<div id="query" class="left">
+			<input id ="user" type="text" />
+			</p>
+			<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
+			</p>
+			<input id="enddatetimepicker" type="text" value="-- select end time --"/>
+			</p>
+			<button id="qqq">Query</button>
+		</div>
+
+		<div id="typeToggle" class="right">
+			<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
+			<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
+			<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+		</div>
+		</p>
+		<!--<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>-->
+		<div id="container1" class="plot_container"></div>
+		<div class="clear"></div>
+	</div>
+
+	<div id="plot2">
+		<div id="queryJob" class="left">
+			<input id ="jobuser" type="text"/>
+			</p>
+			<input id="jobst" type="text" value="-- select start time --"/>
+			</p>
+			<input id="jobet" type="text" value="-- select end time --"/>
+			</p>
+			<select id="job">
+				<option selected="selected" value="1">-- Select a Job --</option>
+			</select>
+			</p>
+			<button id="qb">Query</button>
+		</div>
+		<div id="typeToggle2" class="right">
+			<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
+			<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
+			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
+		</div>
+		</p>
+		<div id="container2" class="plot_container"></div>
+		<!--<div class= "plot_container" id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>-->
+	</div>
+	<!--
 	<div id="plot1">
 		<div id="query">
 			<input id ="user" type="text" />
@@ -34,13 +114,15 @@
 			<input id="enddatetimepicker" type="text" value="-- select end time --"/>
 			<button id="qqq">Query</button>
 		</div>
-		<div id="typeToggle" style="position: absolute; left: 34%">
-			<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
-			<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
-			<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
-		</div>
-		<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
+
+			<div id="typeToggle" style="position: absolute; left: 34%">
+				<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
+				<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
+				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+			</div>
+			<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
 	</div>
+
 
 	<div id="plot2">
 		<div id="queryJob">
@@ -57,20 +139,74 @@
 			<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
 			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
 		</div>
-		<div id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
+		<div class= "plot_container" id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
 	</div>
+-->
+
 
 	<div id="jobdetail">
-		<div id="query3">
+		<div id="query3" class="left">
 			<input id ="user3" type="text" />
+			</p>
 			<select id="joblist">
 				<option selected="selected" value="1">-- Select a Job --</option>
 			</select>
+			</p>
 			<select id="runlist">
 				<option selected="selected" value="1">-- Select a run --</option>
 			</select>
+			</p>
 			<button id="q3">Query</button>
 		</div>
+		<div id="detailTable" class="right">
+			<table>
+				<tbody>
+				<tr>
+					<th>Job Name</th>
+					<td> </td>
+					<th>Status</th>
+					<td> </td>
+				</tr>
+				<tr>
+					<th>User</th>
+					<td> </td>
+					<th>Queue</th>
+					<td> </td>
+				</tr>
+				<tr>
+					<th>SubmitTime</th>
+					<td> </td>
+					<th>FinishTime</th>
+					<td> </td>
+				</tr>
+				<tr>
+					<th>RunTime</th>
+					<td> </td>
+					<th>Cost</th>
+					<td> </td>
+				</tr>
+				<tr>
+					<th>Total Maps</th>
+					<td> </td>
+					<th>Total Reduces</th>
+					<td> </td>
+				</tr>
+				<tr>
+					<th>Finished Maps</th>
+					<td> </td>
+					<th>Finished Reduces</th>
+					<td> </td>
+				</tr>
+				<tr>
+					<th>Failed Maps</th>
+					<td> </td>
+					<th>Failed Reduces</th>
+					<td> </td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="clear"></div>
 	</div>
 </div>
 
