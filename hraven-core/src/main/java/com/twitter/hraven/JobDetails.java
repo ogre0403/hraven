@@ -456,15 +456,15 @@ public class JobDetails implements Comparable<JobDetails> {
     NavigableMap<byte[], byte[]> infoValues = result.getFamilyMap(Constants.INFO_FAM_BYTES);
 
     this.jobId = ByteUtil.getValueAsString(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.JOBID), infoValues);
+            .get(JobHistoryKeys.JOBID), infoValues);
     this.user = ByteUtil.getValueAsString(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.USER), infoValues);
+            .get(JobHistoryKeys.USER), infoValues);
     this.jobName = ByteUtil.getValueAsString(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.JOBNAME),infoValues);
+            .get(JobHistoryKeys.JOBNAME), infoValues);
     this.priority = ByteUtil.getValueAsString(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.JOB_PRIORITY), infoValues);
+            .get(JobHistoryKeys.JOB_PRIORITY), infoValues);
     this.status = ByteUtil.getValueAsString(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.JOB_STATUS), infoValues);
+            .get(JobHistoryKeys.JOB_STATUS), infoValues);
     this.hadoopVersion = getHadoopVersionFromResult(JobHistoryKeys.hadoopversion, infoValues);
     this.version = ByteUtil.getValueAsString(Constants.VERSION_COLUMN_BYTES, infoValues);
     this.cost = ByteUtil.getValueAsDouble(Constants.JOBCOST_BYTES, infoValues);
@@ -473,34 +473,34 @@ public class JobDetails implements Comparable<JobDetails> {
     this.submitTime = ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES
           .get(JobHistoryKeys.SUBMIT_TIME), infoValues);
     this.launchTime = ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.LAUNCH_TIME), infoValues);
+            .get(JobHistoryKeys.LAUNCH_TIME), infoValues);
     this.finishTime = ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES
-          .get(JobHistoryKeys.FINISH_TIME), infoValues);
+            .get(JobHistoryKeys.FINISH_TIME), infoValues);
     this.megabyteMillis = ByteUtil.getValueAsLong(Constants.MEGABYTEMILLIS_BYTES, infoValues);
     this.cost = ByteUtil.getValueAsDouble(Constants.JOBCOST_BYTES, infoValues);
 
     // task counts
     this.totalMaps =
         ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES.get(JobHistoryKeys.TOTAL_MAPS),
-          infoValues);
+                infoValues);
     this.totalReduces =
         ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES.get(JobHistoryKeys.TOTAL_REDUCES),
-          infoValues);
+                infoValues);
     this.finishedMaps =
         ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES.get(JobHistoryKeys.FINISHED_MAPS),
-          infoValues);
+                infoValues);
     this.finishedReduces =
         ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES.get(JobHistoryKeys.FINISHED_REDUCES),
-          infoValues);
+                infoValues);
     this.failedMaps =
         ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES.get(JobHistoryKeys.FAILED_MAPS),
-          infoValues);
+                infoValues);
     this.failedReduces =
         ByteUtil.getValueAsLong(JobHistoryKeys.KEYS_TO_BYTES.get(JobHistoryKeys.FAILED_REDUCES),
-          infoValues);
+                infoValues);
 
     this.config = JobHistoryService.parseConfiguration(infoValues);
-    this.queue = getValueAsString(Constants.JOB_QUEUE_BYTES, infoValues);
+    this.queue = ByteUtil.getValueAsString(Constants.JOB_QUEUE_BYTES, infoValues);
     this.counters = JobHistoryService.parseCounters(Constants.COUNTER_COLUMN_PREFIX_BYTES,
         infoValues);
     this.mapCounters = JobHistoryService.parseCounters(Constants.MAP_COUNTER_COLUMN_PREFIX_BYTES,

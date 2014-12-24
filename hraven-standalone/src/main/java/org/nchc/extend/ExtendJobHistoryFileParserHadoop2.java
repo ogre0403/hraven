@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.twitter.hraven.JobDetails;
 import com.twitter.hraven.JobHistoryKeys;
 import com.twitter.hraven.JobKey;
 import com.twitter.hraven.TaskKey;
@@ -862,6 +863,7 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         return taskPuts;
     }
 
+
     /**
      * utitlity function for printing all puts
      */
@@ -941,4 +943,15 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
 
         return mbMillis;
     }
+
+    /**
+     * TODO: use new version of JobHistoryFileParser
+     * getTobDetails() is not used in hraven-standalone,
+     * we return null in getTobDetails() temporarily
+     * */
+    @Override
+    public JobDetails getJobDetails() {
+        return null;
+    }
+
 }
