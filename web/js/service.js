@@ -230,8 +230,8 @@ $(document).ready(function() {
         var chart = new Highcharts.Chart({
             chart: {
                 renderTo: showPara.canvas,
-                defaultSeriesType: 'line',
-                margin: [50, 150, 60, 80]
+                defaultSeriesType: 'column',
+                //margin: [50, 150, 60, 80]
             },
 
             xAxis: {
@@ -260,7 +260,7 @@ $(document).ready(function() {
             series: [{
                 name: showPara.series,
                 data: Yaxis,
-                color: '#FF0000'
+                color: '#B22222'
             }]
         });
     }

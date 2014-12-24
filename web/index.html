@@ -21,46 +21,13 @@
 </head>
 <body>
 
-<div id="main">
+<div id="main"  align="center" style="width: 1280px;  display: block;  margin-left: auto; margin-right: auto;">
 	<ul class ="idTabs">
 		<li><a href="#plot1">List User's all Job Runs</a></li>
         <li><a href="#plot2">List Job all Runs</a></li>
 		<li><a href="#jobdetail">Show Job Detail</a></li>
 	</ul>
-	<!--
-	<div id="test">
-		<div class="left">
-			<div>
-				<input id ="user" type="text" />
-			</div>
-			</p>
-			<div>
-				<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
-			</div>
-			</p>
-			<div>
-				<input id="enddatetimepicker" type="text" value="-- select end time --"/>
-			</div>
-			</p>
-			<div>
-				<button id="qqq">Query</button>
-			</div>
-			<div class="clear"></div>
-		</div>
-		<div class="right">
-			<div id="typeToggle">
-				<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
-				<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
-				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
-			</div>
-			<div id="container1" >
 
-			</div>
-			<div class="clear"></div>
-		</div>
-		<div class="clear"></div>
-	</div>
--->
 	<div id="plot1">
 		<div id="query" class="left">
 			<input id ="user" type="text" />
@@ -72,14 +39,16 @@
 			<button id="qqq">Query</button>
 		</div>
 
-		<div id="typeToggle" class="right">
-			<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
-			<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
-			<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+		<div class="right">
+			<div id="typeToggle">
+				<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
+				<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
+				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+			</div>
+			<div id="container1" class="plot_container"></div>
 		</div>
-		</p>
 		<!--<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>-->
-		<div id="container1" class="plot_container"></div>
+
 		<div class="clear"></div>
 	</div>
 
@@ -97,52 +66,17 @@
 			</p>
 			<button id="qb">Query</button>
 		</div>
-		<div id="typeToggle2" class="right">
-			<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
-			<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
-			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
+		<div class="right">
+			<div id="typeToggle2">
+				<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
+				<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
+				<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
+				<div id="container2" class="plot_container"></div>
+			</div>
 		</div>
-		</p>
-		<div id="container2" class="plot_container"></div>
+		<div class="clear"></div>
 		<!--<div class= "plot_container" id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>-->
 	</div>
-	<!--
-	<div id="plot1">
-		<div id="query">
-			<input id ="user" type="text" />
-			<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
-			<input id="enddatetimepicker" type="text" value="-- select end time --"/>
-			<button id="qqq">Query</button>
-		</div>
-
-			<div id="typeToggle" style="position: absolute; left: 34%">
-				<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
-				<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
-				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
-			</div>
-			<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
-	</div>
-
-
-	<div id="plot2">
-		<div id="queryJob">
-			<input id ="jobuser" type="text"/>
-			<select id="job">
-				<option selected="selected" value="1">-- Select a Job --</option>
-			</select>
-			<input id="jobst" type="text" value="-- select start time --"/>
-			<input id="jobet" type="text" value="-- select end time --"/>
-			<button id="qb">Query</button>
-		</div>
-		<div id="typeToggle2" style="position: absolute; left: 34%">
-			<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
-			<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
-			<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
-		</div>
-		<div class= "plot_container" id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>
-	</div>
--->
-
 
 	<div id="jobdetail">
 		<div id="query3" class="left">
