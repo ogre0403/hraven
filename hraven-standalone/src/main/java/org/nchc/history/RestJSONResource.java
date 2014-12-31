@@ -17,8 +17,6 @@ package org.nchc.history;
 
 import com.google.common.base.Stopwatch;
 import com.twitter.hraven.*;
-import com.twitter.hraven.datasource.*;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -28,7 +26,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Main REST resource that handles binding the REST API to the JobHistoryService.
@@ -43,13 +40,13 @@ public class RestJSONResource {
 
   private static final Configuration HBASE_CONF = HBaseConfiguration.create();
 
-  private static final ThreadLocal<queryJobService> queryThreadLocal =
-        new ThreadLocal<queryJobService>() {
+  private static final ThreadLocal<QueryJobService> queryThreadLocal =
+        new ThreadLocal<QueryJobService>() {
             @Override
-            protected queryJobService initialValue() {
+            protected QueryJobService initialValue() {
                 try {
                     LOG.info("Initializing queryJobService");
-                    return new queryJobService(HBASE_CONF);
+                    return new QueryJobService(HBASE_CONF);
                 } catch (IOException e) {
                     throw new RuntimeException("Could not initialize queryJobService", e);
                 }
@@ -158,7 +155,7 @@ public class RestJSONResource {
 
 
 
-    private static queryJobService getQueryService(){
+    private static QueryJobService getQueryService(){
         if (LOG.isDebugEnabled()) {
             LOG.debug(String.format("Returning JobHistoryService %s bound to thread %s",
                     queryThreadLocal.get(), Thread.currentThread().getName()));

@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.jruby.RubyProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -49,7 +50,7 @@ public class TestRealData {
 
     @Ignore
     public void testfromTsSortedBytes() throws IOException {
-        queryJobService qser = new queryJobService(HBASE_CONF);
+        QueryJobService qser = new QueryJobService(HBASE_CONF);
         List<JobDetails> jj = qser.getAllJobInTimeInterval("NCHC","hdadm",false);
         qser.close();
     }
@@ -111,11 +112,36 @@ public class TestRealData {
         }
     }
 
-    @Test
+    @Ignore
     public void testHttpServer() throws Exception {
         RestServer server = new RestServer("0.0.0.0", 8080);
         server.startUp();
 //        Thread.sleep(100000000);
+    }
+
+    @Ignore
+    public void testQueryRunningJob() throws Exception{
+        QueryJobService qq = new QueryJobService(HBASE_CONF);
+        List<String> list = qq.getRunningJobName("hdadm");
+        for(String s : list){
+            System.out.println(s);
+        }
+    }
+
+    @Ignore
+    public void testQueryRunningJobID() throws Exception{
+        QueryJobService qq = new QueryJobService(HBASE_CONF);
+        List<String> list = qq.getRunningJobID("hdadm","Read Image");
+        for(String s : list){
+            System.out.println(s);
+        }
+    }
+
+    @Test
+    public void testQueryRunningStatus() throws Exception{
+        QueryJobService qq = new QueryJobService(HBASE_CONF);
+        RunningStatus rs = qq.getRunningJobStatus("application_1419570118547_0010");
+        System.out.println(rs);
     }
 
     @AfterClass
