@@ -1,22 +1,33 @@
-package org.nchc.history;
+package org.nchc.rest;
+
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * Created by 1403035 on 2014/12/31.
  */
-public class RunningStatus {
+public class RunningStatusDAO {
     int mapProgress = 0;
     int  reduceProgress = 0;
     long startTime = 0L;
     long elapsedTime = 0L;
     long ETA = 0L;
 
-    public RunningStatus(int m_progress, int r_progress, long startTime, long elapsedTime, long ETA){
+    @JsonCreator
+    public RunningStatusDAO(
+            @JsonProperty("mapProgress") int m_progress,
+            @JsonProperty("reduceProgress") int r_progress,
+            @JsonProperty("startTime") long startTime,
+            @JsonProperty("elapsedTime") long elapsedTime,
+            @JsonProperty("eta") long ETA){
         this.mapProgress = m_progress;
         this.reduceProgress = r_progress;
         this.startTime = startTime;
         this.elapsedTime = elapsedTime;
         this.ETA = ETA;
     }
+
+    public RunningStatusDAO(){}
 
     @Override
     public String toString() {

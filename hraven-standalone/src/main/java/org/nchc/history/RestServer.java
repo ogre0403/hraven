@@ -92,7 +92,7 @@ public class RestServer extends AbstractIdleService {
 
         // Restful context
         ServletHolder sh = new ServletHolder(ServletContainer.class);
-        sh.setInitParameter("com.sun.jersey.config.property.packages", "org.nchc.history");
+        sh.setInitParameter("com.sun.jersey.config.property.packages", "org.nchc.rest");
         sh.setInitParameter(JSONConfiguration.FEATURE_POJO_MAPPING, "true");
         Context context = new Context(server, "/", Context.SESSIONS);
 //        context.setResourceBase(baseUri.toASCIIString());

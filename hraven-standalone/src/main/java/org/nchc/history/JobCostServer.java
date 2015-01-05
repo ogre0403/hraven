@@ -45,6 +45,7 @@
     import org.nchc.extend.ExtendJobHistoryByIdService;
     import org.nchc.extend.ExtendJobHistoryFileParserHadoop2;
     import org.nchc.extend.ExtendJobHistoryRawService;
+    import org.nchc.extend.ExtendJobHistoryService;
 
     /**
      * Command line tool that can be run on a periodic basis (like daily, hourly, or

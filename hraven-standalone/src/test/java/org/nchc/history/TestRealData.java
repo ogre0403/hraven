@@ -11,12 +11,13 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.RegexStringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.jruby.RubyProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nchc.extend.ExtendConstants;
+import org.nchc.rest.QueryJobService;
+import org.nchc.rest.RunningStatusDAO;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -140,7 +141,7 @@ public class TestRealData {
     @Test
     public void testQueryRunningStatus() throws Exception{
         QueryJobService qq = new QueryJobService(HBASE_CONF);
-        RunningStatus rs = qq.getRunningJobStatus("application_1419570118547_0010");
+        RunningStatusDAO rs = qq.getRunningJobStatus("application_1419570118547_0010");
         System.out.println(rs);
     }
 

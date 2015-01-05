@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.nchc.history;
+package org.nchc.rest;
 
 import com.google.common.base.Stopwatch;
 import com.twitter.hraven.*;
@@ -54,6 +54,7 @@ public class RestJSONResource {
   };
 
 
+    /**TODO: POST and UserJobDAO*/
     @GET
     @Path("job/{cluster}/{user}/{jobname}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -96,7 +97,7 @@ public class RestJSONResource {
         return getQueryService().getAllJobName(cluster,user);
     }
 
-
+    /**TODO: POST and UserJobDAO*/
     @GET
     @Path("runList/{cluster}/{user}/{jobname}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -138,8 +139,6 @@ public class RestJSONResource {
                                            @PathParam("jobId") String jobId) throws IOException {
     LOG.info("Fetching tasks info for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
-
-//    JobDetails jobDetails = getJobHistoryService().getJobByJobID(cluster, jobId, true);
     JobDetails jobDetails =null;
     timer.stop();
     List<TaskDetails> tasks = jobDetails.getTasks();
@@ -154,6 +153,36 @@ public class RestJSONResource {
   }
 
 
+    @GET
+    @Path("running/status/{jobId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public RunningStatusDAO getRunStatus(@PathParam("jobId") String jobId) throws IOException {
+        LOG.debug("query running " +  jobId+" status");
+        RunningStatusDAO dao = getQueryService().getRunningJobStatus(jobId);
+        if (dao == null){
+            return new RunningStatusDAO();
+        }else {
+            return dao;
+        }
+    }
+
+    @POST
+    @Path("running/id/")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getRunningJobID(UserJobDAO s ) throws IOException {
+        LOG.debug("query running " +  s.getJobname()+ "/" + s.getUsername() +"application id");
+        return getQueryService().getRunningJobID(s.getUsername(),s.getJobname());
+    }
+
+
+    @GET
+    @Path("running/job/{username}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getRuningJobName(@PathParam("username") String username) throws IOException {
+        LOG.debug("query running " +  username +" job name.");
+        return getQueryService().getRunningJobName(username);
+    }
 
     private static QueryJobService getQueryService(){
         if (LOG.isDebugEnabled()) {

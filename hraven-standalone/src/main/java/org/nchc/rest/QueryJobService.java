@@ -1,4 +1,4 @@
-package org.nchc.history;
+package org.nchc.rest;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -28,9 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by 1403035 on 2014/11/14.
- */
+
 public class QueryJobService {
     private static final Log LOG = LogFactory.getLog(QueryJobService.class);
     private static final String NOCOUNTER_REGEXP =    //"^(gm!|gr!|c!|g!)"
@@ -205,29 +203,44 @@ public class QueryJobService {
         Filter qfilter = new QualifierFilter(CompareFilter.CompareOp.EQUAL, new BinaryComparator(Bytes.toBytes(jobname)));
         get.setFilter(qfilter);
         Result result = runningTable.get(get);
-        return  Arrays.asList(
-                Bytes.toString(
-                        result.getValue(ExtendConstants.RUNNING_JOB_CF_BYTES, Bytes.toBytes(jobname)))
-                        .split(ExtendConstants.SEP5)
-        );
+
+        if (result.isEmpty()){
+            return new LinkedList<String>();
+        }else {
+            return Arrays.asList(
+                    Bytes.toString(
+                            result.getValue(ExtendConstants.RUNNING_JOB_CF_BYTES, Bytes.toBytes(jobname)))
+                            .split(ExtendConstants.SEP5)
+            );
+        }
     }
 
-    public RunningStatus getRunningJobStatus(String jobID) throws IOException {
+    public RunningStatusDAO getRunningJobStatus(String jobID){
         String url = progress_url_prefix + jobID + progress_url_postfix;
         HttpGet getRequest = new HttpGet(url);
         getRequest.addHeader("accept", "application/json");
-        HttpResponse response = httpClient.execute(getRequest);
+        HttpResponse response;
+        try {
+            response = httpClient.execute(getRequest);
+        }catch (IOException ioe){
+            return null;
+        }
 
         if (response.getStatusLine().getStatusCode() != 200) {
             throw new RuntimeException("Failed : HTTP error code : "
                     + response.getStatusLine().getStatusCode());
         }
 
-        JsonElement ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        JsonElement ee;
+        try {
+            ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        }catch (IOException ioe){
+            return null;
+        }
+
         JsonObject joo = ee.getAsJsonObject();
         JsonArray jaa = joo.getAsJsonObject("jobs").getAsJsonArray("job");
         if(jaa.size() > 1){
-            System.out.println("should no be here");
             LOG.error("There should be only one job status.");
             return null;
         }
@@ -250,7 +263,7 @@ public class QueryJobService {
             ETA = startTime + (long) (((double) elapsedTime) / ttt);
         }
 
-        return new RunningStatus(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
+        return new RunningStatusDAO(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
     }
 
     public void close() throws IOException {

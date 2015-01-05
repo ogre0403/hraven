@@ -12,9 +12,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.nchc.extend.ExtendConstants;
-import scala.collection.mutable.*;
+import org.nchc.rest.RunningStatusDAO;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.StringBuilder;
@@ -42,7 +41,7 @@ public class MyHttpClient {
     private static Configuration conf = null;
 
     public static void main(String[] args) throws IOException {
-        /*
+
         Map<String, Map<String,StringBuilder>> jobs = getJobID2();
         List<Put> lp = toPuts(jobs);
         conf = new Configuration();
@@ -50,13 +49,13 @@ public class MyHttpClient {
         htable = new HTable(conf,"job_running");
         htable.put(lp);
         htable.close();
-        */
+
 
 
 
        // getRunningStatus("application_1419570118547_0007");
         httpClient.getConnectionManager().shutdown();
-        parse_json();
+     //   parse_json();
     //    Map<String, List<String>> joblist =  getJobID();
     //    updateHBaseRuningJobTable(joblist);
 
@@ -194,7 +193,7 @@ public class MyHttpClient {
         htable.put(lp);
     }
 
-    private static RunningStatus getRunningStatus(String jobID) throws IOException {
+    private static RunningStatusDAO getRunningStatus(String jobID) throws IOException {
         String url = progress_url_prefix + jobID + progress_url_postfix;
         HttpGet getRequest = new HttpGet(url);
         getRequest.addHeader("accept", "application/json");
@@ -226,12 +225,12 @@ public class MyHttpClient {
         double ttt = (((double) mapsCompleted+(double)reducesCompleted)/((double)mapsTotal+(double)reducesTotal));
         long ETA = startTime + (long)(((double)elapsedTime)/ttt);
 
-        return new RunningStatus(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
+        return new RunningStatusDAO(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
 
     }
 
 
-    private static RunningStatus parse_json(){
+    private static RunningStatusDAO parse_json(){
         JsonElement ee = parser.parse(JSON_STR);
         JsonObject joo = ee.getAsJsonObject();
         JsonArray jaa = joo.getAsJsonObject("jobs").getAsJsonArray("job");
@@ -254,7 +253,7 @@ public class MyHttpClient {
         double ttt = (((double) mapsCompleted+(double)reducesCompleted)/((double)mapsTotal+(double)reducesTotal));
         long ETA = startTime + (long)(((double)elapsedTime)/ttt);
 
-        return new RunningStatus(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
+        return new RunningStatusDAO(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
     }
 
     private static void validateMap(Map<String, List<String>> map ){
