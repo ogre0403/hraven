@@ -93,17 +93,26 @@
       private HTable jobTable = null;
       private HTable taskTable = null;
       private HashMap<JobFile,FileStatus> jobstatusmap = null;
-      private static String costdetail = "cost.properties";
+      //private static String costdetail = "cost.properties";
       private static String macType = "default";
 
       private static String cluster;
       private static Path inputPath;
       private static int batchSize = DEFAULT_BATCH_SIZE;
       private static long maxFileSize = DEFAULT_RAW_FILE_SIZE_LIMIT;
-      /**
-       * Default constructor.
-       */
+
+      private static int INTERVAL=30000;
+      private static Properties prop;
+
       public JobCostServer() {
+      }
+
+      public JobCostServer(Properties ps ){
+          this.prop = ps;
+          this.cluster =ps.getProperty("history.cluster","nchc");
+          this.inputPath= new Path(ps.getProperty("history.hdfsdir"));
+          this.INTERVAL = Integer.parseInt(ps.getProperty("history.interval","40000"));
+          this.macType = ps.getProperty("machinetype","default");
       }
 
       public JobCostServer(Configuration conf) {
@@ -125,35 +134,20 @@
         Option o = new Option("c", "cluster", true,
             "cluster for which jobs are processed");
         o.setArgName("cluster");
-        o.setRequired(true);
+        o.setRequired(false);
         options.addOption(o);
 
 
         // Input
-        o = new Option(
-            "i",
-            "input",
-            true,
+        o = new Option("i", "input", true,
             "input directory in hdfs. Default is mapreduce.jobtracker.jobhistory.completed.location.");
         o.setArgName("input-path");
         o.setRequired(false);
         options.addOption(o);
 
-          // Cost file
-        o = new Option(
-                  "C",
-                 "costfile",
-                 true,
-                 "cost file. Default is conf/cost.properties");
-        o.setArgName("path-to-cost-file");
-        o.setRequired(false);
-        options.addOption(o);
 
           // machine type
-         o = new Option(
-                  "t",
-                  "type",
-                  true,
+         o = new Option("t",  "type",  true,
                   "machine type in cost file. Default is default");
          o.setArgName("machine-type");
          o.setRequired(false);
@@ -208,14 +202,15 @@
 
           // Grab the arguments we're looking for.
           CommandLine commandLine = parseArgs(otherArgs);
-          // Grab the cluster argument
-          cluster = commandLine.getOptionValue("c");
+          // Grab the cluster argument from cmd
+          if (commandLine.hasOption("c")) {
+              cluster = commandLine.getOptionValue("c");
+          }
           hbaseConf.setStrings(Constants.CLUSTER_JOB_CONF_KEY, cluster);
-          LOG.info("cluster=" + cluster);
+          LOG.info("cluster: " + cluster);
 
           hdfs = FileSystem.get(hbaseConf);
           rawService = new ExtendJobHistoryRawService(hbaseConf);
-          //appVersionService = new AppVersionService(hbaseConf);
           jobHistoryByIdService = new ExtendJobHistoryByIdService(hbaseConf);
           rawTable = new HTable(hbaseConf, Constants.HISTORY_RAW_TABLE_BYTES);
           jobTable = new HTable(hbaseConf,Constants.HISTORY_TABLE_BYTES);
@@ -226,16 +221,14 @@
           String input;
           if (commandLine.hasOption("i")) {
               input = commandLine.getOptionValue("i");
-          } else {
-              input = hbaseConf.get("mapreduce.jobtracker.jobhistory.completed.location");
+              inputPath = new Path(input);
+              FileStatus inputFileStatus = hdfs.getFileStatus(inputPath);
+              if (!inputFileStatus.isDir()) {
+                  throw new IOException("Input is not a directory"
+                          + inputFileStatus.getPath().getName());
+              }
           }
-          inputPath = new Path(input);
-          FileStatus inputFileStatus = hdfs.getFileStatus(inputPath);
-          if (!inputFileStatus.isDir()) {
-              throw new IOException("Input is not a directory"
-                      + inputFileStatus.getPath().getName());
-          }
-          LOG.info("input=" + input);
+          LOG.info("history dir: " + inputPath.toString());
 
           // Grab the batch-size argument
           if (commandLine.hasOption("b")) {
@@ -253,7 +246,9 @@
                                   + commandLine.getOptionValue("b"));
               }
           }
+          LOG.info("batchsize=" + batchSize);
 
+          // raw file size limit
           if (commandLine.hasOption("s")) {
               String maxFileSizeStr = commandLine.getOptionValue("s");
               try {
@@ -265,15 +260,11 @@
           }
           LOG.info("maxFileSize=" + maxFileSize);
 
-          if (commandLine.hasOption("C")) {
-              costdetail = commandLine.getOptionValue("C");
-          }
-          LOG.info("cost detail file = " + costdetail);
-
           if (commandLine.hasOption("t")) {
               macType = commandLine.getOptionValue("t");
           }
-          LOG.info("machine type = " + macType);
+          LOG.info("machine type: " + macType);
+          LOG.info("history.interval: " + INTERVAL);
       }
 
       @Override
@@ -288,8 +279,7 @@
             FileStatus[] jobFileStatusses = findProcessFiles(processRecordService);
             if (jobFileStatusses.length < 1) {
                 LOG.info("No newly job, return");
-                //TODO: sleep interval from configuration
-                Thread.sleep(60000);
+                Thread.sleep(INTERVAL);
                 continue;
             }
             LOG.info("Sorting " + jobFileStatusses.length + " job files.");
@@ -317,7 +307,7 @@
                 jobstatusmap.clear();
             }
             loadJobTaskDetail(cluster, minMaxJobFileTracker.getMinJobId(), minMaxJobFileTracker.getMaxJobId());
-            Thread.sleep(60000);
+            Thread.sleep(INTERVAL);
         }
       }
 
@@ -448,7 +438,7 @@
                     jobputs.addAll(mbPut);
 
                     /** post processing steps to get cost of the job */
-                    Double jobCost = PutUtil.getJobCost(mbMillis, macType, costdetail);
+                    Double jobCost = PutUtil.getJobCost(mbMillis, macType, this.prop);
                     if (jobCost == null) {
                         throw new ProcessingException(" Unable to get job cost calculation for this record!"
                                 + jobKey);
@@ -551,18 +541,26 @@
             return processRecord;
         }
 
+
+/*
       public static void main(String[] args) throws Exception {
 
-        LOG.info("start embedded jetty server...");
-        //TODO: server port from configuration
-        RestServer server = new RestServer("0.0.0.0", 8080);
+        Properties ps = PutUtil.loadCostProperties("cost.properties");
+
+        LOG.info("START embedded jetty server...");
+        RestServer server = new RestServer(ps);
         server.startUp();
 
-        LOG.info("start parse history");
+        LOG.info("START scan running job thread...");
+        RunningJobID task = new RunningJobID(ps);
+        Thread t = new Thread(task);
+        t.start();
+
+        LOG.info("START parse history");
         ToolRunner.run(new JobCostServer(), args);
 
-          //TODO: close HTable
+        //TODO: close HTable
 
       }
-
+*/
     }

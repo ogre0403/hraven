@@ -35,6 +35,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 /**
  * Simple REST server that spawns an embedded Jetty instance to service requests
@@ -56,6 +57,13 @@ public class RestServer extends AbstractIdleService {
     this.port = port;
   }
 
+  public RestServer(Properties ps){
+      this.address = DEFAULT_ADDRESS;
+      int port = Integer.parseInt(ps.getProperty("rest.port"));
+      LOG.info("rest.port: " + port);
+      this.port = port;
+
+  }
     @Override
     protected void startUp() throws Exception {
         server = new Server();

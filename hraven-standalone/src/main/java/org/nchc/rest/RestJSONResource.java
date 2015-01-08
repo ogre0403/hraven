@@ -170,11 +170,21 @@ public class RestJSONResource {
     @Path("running/id/")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Deprecated
     public List<String> getRunningJobID(UserJobDAO s ) throws IOException {
         LOG.debug("query running " +  s.getJobname()+ "/" + s.getUsername() +"application id");
         return getQueryService().getRunningJobID(s.getUsername(),s.getJobname());
     }
 
+
+    @GET
+    @Path("running/id/{username}/{jobname}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> GetRunningJobID(@PathParam("username")String username,
+                                        @PathParam("jobname")String jobname ) throws IOException {
+        LOG.debug("query running " +  username+ "/" + jobname +"application id");
+        return getQueryService().getRunningJobID(username,jobname);
+    }
 
     @GET
     @Path("running/job/{username}")

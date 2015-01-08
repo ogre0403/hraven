@@ -86,12 +86,12 @@ public class PutUtil {
         return rawBytes;
     }
 
-    public static Double getJobCost(Long mbMillis, String machineType, String costdetail) {
+    public static Double getJobCost(Long mbMillis, String machineType, Properties ps) {
         Double computeTco = 0.0;
         Long machineMemory = 0L;
-        Properties prop = null;
+        Properties prop = ps;
         LOG.debug(" machine type " + machineType);
-        prop = loadCostProperties(costdetail);
+        //prop = loadCostProperties(costdetail);
 
 
         if (prop != null) {
@@ -120,7 +120,7 @@ public class PutUtil {
     }
 
 
-    private static Properties loadCostProperties(String costDetailsPath) {
+    public static Properties loadCostProperties(String costDetailsPath) {
         Properties prop = new Properties();
         InputStream inp = PutUtil.class.getClassLoader().getResourceAsStream(costDetailsPath);
 

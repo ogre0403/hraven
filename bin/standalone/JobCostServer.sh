@@ -19,11 +19,11 @@
 # Usage ./jobFilePreprocessor.sh [hadoopconfdir]
 #   [historyrawdir] [historyprocessingdir] [cluster] [batchsize]
 
-if [ $# -ne 2 ]
-then
-  echo "Usage: `basename $0` [history_dir] [cluster]"
-  exit 1
-fi
+#if [ $# -ne 2 ]
+#then
+#  echo "Usage: `basename $0` [history_dir] [cluster]"
+#  exit 1
+#fi
 
 source $(dirname $0)/hraven-etl-env.sh
 
@@ -48,4 +48,5 @@ HRAVEN_HOME=${HRAVEN_HOME:-$etl/../../}
 for f in $HRAVEN_HOME/lib/*.jar; do
     CLASSPATH=$f:${CLASSPATH};
 done
-java -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.JobCostServer -d  -i $1 -c $2
+#java -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Main -d  -i $1 -c $2
+java -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Main -d
