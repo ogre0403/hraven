@@ -96,3 +96,23 @@ td {
 	position: relative;
 	transition: all 300ms;
 }
+
+
+/*map, reduce progress */
+#running > .right span
+{
+    display: inline-block;
+    position: absolute;
+    height:25px;
+}
+
+.progress
+{
+    border: solid 1px #ccc;
+    background: #eee;
+}
+
+.progress .value
+{
+    background: #3182bd;
+}

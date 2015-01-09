@@ -32,8 +32,6 @@ public class Main {
 
         LOG.info("START parse history");
         ToolRunner.run(new JobCostServer(ps), args);
-
-
     }
 
     public void close(){

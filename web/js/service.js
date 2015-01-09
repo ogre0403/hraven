@@ -8,19 +8,14 @@ $(document).ready(function() {
 
     // UI
     $("#main").tabs();
-    $("#startdatetimepicker1").datetimepicker().button();
-    $("#enddatetimepicker").datetimepicker().button();
     $("#typeToggle").buttonset();
-
-    $("#jobuser").button();
-    $("#qb").button();
-    $("#jobst").datetimepicker().button();
-    $("#jobet").datetimepicker().button();
     $("#typeToggle2").buttonset();
-
-    $("#user3").button();
-    $("#joblist").selectmenu();
-    $("#runlist").selectmenu();
+    // timepicker
+    $(".datetime_selector").datetimepicker().button();
+    // input user
+    $(".user_input").button();
+    //buttom
+    $(".query_button").button();
 
 
     function updateMenu(json,str_id){
@@ -32,9 +27,40 @@ $(document).ready(function() {
                 .attr("value",value)
                 .text(value));
             });
-           $(str_id).selectmenu('refresh');
+        }else{
+            $(str_id).append($("<option></option>").attr("value","Not Found").text("Not Found"));
         }
+        $(str_id).selectmenu('refresh');
     }
+
+    $("#runningjoblist").selectmenu({
+        open: function( event, ui ) {
+            var user = $("#runningusername").val();
+            $.ajax({
+                url: SERVER+RESTPREFIX+"running/job/"+user,
+                type:"GET",
+                dataType:'json',
+                success: function(json){
+                  updateMenu(json, "#runningjoblist");
+                }
+            });
+        }
+    });
+
+    $("#runningidlist").selectmenu({
+        open: function( event, ui ) {
+            var user = $("#runningusername").val();
+            var job = $("#runningjoblist").val();
+            $.ajax({
+                url: SERVER+RESTPREFIX+"running/id/"+user+"/"+job,
+                type:"GET",
+                dataType:'json',
+                success: function(json){
+                  updateMenu(json, "#runningidlist");
+                }
+            });
+        }
+    });
 
     $("#joblist").selectmenu({
         open: function( event, ui ) {
@@ -123,10 +149,8 @@ $(document).ready(function() {
     }
 
     function queryUser(user, start_ts,end_ts){
-//        console.log(user + start_ts + end_ts);
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
-//        console.log(user +"/"+ ts1 + "/"+ts2);
 
         dataarray =[[],[],[],[]]; //clear query result array
 
@@ -149,14 +173,11 @@ $(document).ready(function() {
             };
             plot(dataarray[0],dataarray[1],para);
         });
-        //TODO: return 2d array instead of filling result array
     }
 
     function queryJob(user,job,start_ts,end_ts){
-//        console.log(user + job + start_ts + end_ts);
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
-//        console.log(user +"/"+job+"/"+ ts1 + "/"+ts2);
         dataarray =[[],[],[],[]]; //clear query result array
          $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/"+job+"/?start="+ts1+"&end="+ts2, function(json){
              for(var k in json) {
@@ -175,7 +196,6 @@ $(document).ready(function() {
              };
              plot(dataarray[0],dataarray[1],para);
          });
-         //TODO: return 2d array instead of filling result array
     }
 
     function queryJobDetail(run){
@@ -189,19 +209,46 @@ $(document).ready(function() {
         });
     }
 
-    function detailTable(json){
-        //TODO: show in a table format
-        console.log(json['status']);
-        console.log(json['jobName']);
-        console.log(json['user']);
-        console.log(json['queue']);
-        console.log(json['submitTime']);
-        console.log(json['finishTime']);
-        console.log(json['runTime']);
-        console.log(json['megabyteMillis']);
-        console.log(json['cost']);
-        console.log(json['totalMaps']+"/"+json['finishedMaps']+"/"+json['failedMaps']);
-        console.log(json['totalReduces']+"/"+json['finishedReduces']+"/"+json['failedReduces']);
+    function queryRunningDetail(run){
+        $.ajax({
+            url: SERVER+RESTPREFIX+"running/status/"+run,
+            type:"GET",
+            dataType:'json',
+            success: function(json){
+                showRunningStatus(json);
+            }
+        });
+    }
+
+
+    function showRunningStatus(json){
+        mapProgress= json['mapProgress']+"%";
+        reduceProgress = json['reduceProgress']+"%";
+        startTime = timeConverter(json['startTime']);
+        elapsedTime = exec_duration(json['elapsedTime']);
+
+        if(json['eta'] == '9223372036854776000'){
+            eta = "N/A";
+        }else if(json['eta'] == '0'){
+            $("#runningstatustable table tbody").children().eq(0).children().eq(1).replaceWith("<td>"+"N/A"+"</td>");
+            $("#runningstatustable table tbody").children().eq(0).children().eq(3).replaceWith("<td>"+"N/A"+"</td>");
+            $("#runningstatustable table tbody").children().eq(1).children().eq(1).replaceWith("<td>"+"N/A"+"</td>");
+            $("#map_progress").css('width', "0%");
+            $("#reduce_progress").css('width', "0%");
+            document.getElementById("map_progress_text").innerHTML = "0 %";
+            document.getElementById("reduce_progress_text").innerHTML = "0 %";
+            return;
+        }else{
+            eta = timeConverter(json['eta']);
+        }
+
+        $("#runningstatustable table tbody").children().eq(0).children().eq(1).replaceWith("<td>"+startTime+"</td>");
+        $("#runningstatustable table tbody").children().eq(0).children().eq(3).replaceWith("<td>"+elapsedTime+"</td>");
+        $("#runningstatustable table tbody").children().eq(1).children().eq(1).replaceWith("<td>"+eta+"</td>");
+        $("#map_progress").css('width',mapProgress);
+        $("#reduce_progress").css('width', reduceProgress);
+        document.getElementById("map_progress_text").innerHTML = mapProgress;
+        document.getElementById("reduce_progress_text").innerHTML = reduceProgress;
     }
 
     function detailTable2(json){
@@ -265,18 +312,21 @@ $(document).ready(function() {
         });
     }
 
+    $("#q4").click(function(){
+        var jobid = $("#runningidlist").val();
+        queryRunningDetail(jobid);
+    });
 
 
-    $("#user").button();
 
-    $("#qqq").button().click(function(){
+    $("#qqq").click(function(){
         var v1 = $("#user").val();
         var v2 = $("#startdatetimepicker1").val();
         var v3 = $("#enddatetimepicker").val();
         queryUser(v1,v2,v3);
     });
 
-     $("#qb").button().click(function(){
+     $("#qb").click(function(){
             var v1 = $("#jobuser").val();
             var v2 = $("#job").val();
             var v3 = $("#jobst").val();
@@ -284,10 +334,9 @@ $(document).ready(function() {
             queryJob(v1,v2,v3,v4);
      });
 
-     $("#q3").button().click(function(){
+     $("#q3").click(function(){
          var v3 = $("#runlist").val();
          queryJobDetail(v3);
-         //detailTable2();
      });
 
     $("#btncost").click(function () {

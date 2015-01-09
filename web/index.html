@@ -4,7 +4,6 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>NCHC MR Job Usage</title>
 
-	<!--<link href="http://code.jquery.com/ui/1.11.2/themes/blitzer/jquery-ui.css" rel="stylesheet">-->
 	<link href="./css/my_test.css" rel="stylesheet">
 	<link href="./css/jquery-ui.css" rel="stylesheet">
 	<link href="./css/jquery-ui-timepicker-addon.css" rel="stylesheet">
@@ -15,7 +14,6 @@
 	<script src="./js/jquery-ui-sliderAccess.js" type="text/javascript"></script>
 	<script src="./js/jquery.idTabs.min.js" type="text/javascript" ></script>
 	<script src="./js/highcharts.js" type="text/javascript"></script>
-	<!-- 2. Add the JavaScript to initialize the chart on document ready-->
 	<script src="./js/service.js" type="text/javascript" ></script>
 
 </head>
@@ -23,6 +21,7 @@
 
 <div id="main"  align="center" style="width: 1280px;  display: block;  margin-left: auto; margin-right: auto;">
 	<ul class ="idTabs">
+		<li><a href="#running">Running Job Status</a></li>
 		<li><a href="#plot1">List User's all Job Runs</a></li>
         <li><a href="#plot2">List Job all Runs</a></li>
 		<li><a href="#jobdetail">Show Job Detail</a></li>
@@ -30,13 +29,13 @@
 
 	<div id="plot1">
 		<div id="query" class="left">
-			<input id ="user" type="text" />
+			<input id ="user" class="user_input" type="text" />
 			</p>
-			<input id="startdatetimepicker1" type="text" value="-- select start time --"/>
+			<input id="startdatetimepicker1" class="datetime_selector" type="text" value="-- select start time --"/>
 			</p>
-			<input id="enddatetimepicker" type="text" value="-- select end time --"/>
+			<input id="enddatetimepicker" class="datetime_selector" type="text" value="-- select end time --"/>
 			</p>
-			<button id="qqq">Query</button>
+			<button id="qqq" class = "query_button">Query</button>
 		</div>
 
 		<div class="right">
@@ -54,17 +53,17 @@
 
 	<div id="plot2">
 		<div id="queryJob" class="left">
-			<input id ="jobuser" type="text"/>
+			<input id ="jobuser" class="user_input" type="text"/>
 			</p>
-			<input id="jobst" type="text" value="-- select start time --"/>
+			<input id="jobst" class="datetime_selector" type="text" value="-- select start time --"/>
 			</p>
-			<input id="jobet" type="text" value="-- select end time --"/>
+			<input id="jobet" class="datetime_selector" type="text" value="-- select end time --"/>
 			</p>
 			<select id="job">
 				<option selected="selected" value="1">-- Select a Job --</option>
 			</select>
 			</p>
-			<button id="qb">Query</button>
+			<button id="qb" class = "query_button">Query</button>
 		</div>
 		<div class="right">
 			<div id="typeToggle2">
@@ -80,68 +79,94 @@
 
 	<div id="jobdetail">
 		<div id="query3" class="left">
-			<input id ="user3" type="text" />
+			<input id ="user3" class="user_input"  type="text" />
 			</p>
 			<select id="joblist">
-				<option selected="selected" value="1">-- Select a Job --</option>
+				<option selected="selected" value="1">-- Select a History Job --</option>
 			</select>
 			</p>
 			<select id="runlist">
-				<option selected="selected" value="1">-- Select a run --</option>
+				<option selected="selected" value="1">-- Select a History ID --</option>
 			</select>
 			</p>
-			<button id="q3">Query</button>
+			<button id="q3" class = "query_button">Query</button>
 		</div>
 		<div id="detailTable" class="right">
 			<table>
 				<tbody>
 				<tr>
-					<th>Job Name</th>
-					<td> </td>
-					<th>Status</th>
-					<td> </td>
+					<th>Job Name</th><td> </td>	<th>Status</th>	<td> </td>
 				</tr>
 				<tr>
-					<th>User</th>
-					<td> </td>
-					<th>Queue</th>
-					<td> </td>
+					<th>User</th><td> </td><th>Queue</th><td> </td>
 				</tr>
 				<tr>
-					<th>SubmitTime</th>
-					<td> </td>
-					<th>FinishTime</th>
-					<td> </td>
+					<th>SubmitTime</th><td> </td><th>FinishTime</th><td> </td>
 				</tr>
 				<tr>
-					<th>RunTime</th>
-					<td> </td>
-					<th>Cost</th>
-					<td> </td>
+					<th>RunTime</th><td> </td><th>Cost</th><td> </td>
 				</tr>
 				<tr>
-					<th>Total Maps</th>
-					<td> </td>
-					<th>Total Reduces</th>
-					<td> </td>
+					<th>Total Maps</th><td> </td><th>Total Reduces</th>	<td> </td>
 				</tr>
 				<tr>
-					<th>Finished Maps</th>
-					<td> </td>
-					<th>Finished Reduces</th>
-					<td> </td>
+					<th>Finished Maps</th><td> </td><th>Finished Reduces</th><td> </td>
 				</tr>
 				<tr>
-					<th>Failed Maps</th>
-					<td> </td>
-					<th>Failed Reduces</th>
-					<td> </td>
+					<th>Failed Maps</th><td> </td><th>Failed Reduces</th><td> </td>
 				</tr>
 				</tbody>
 			</table>
 		</div>
 		<div class="clear"></div>
 	</div>
+
+	<div id="running">
+		<div class="left">
+			<input id= "runningusername" class="user_input"  type="text" />
+			</p>
+			<select id="runningjoblist">
+				<option selected="selected" value="1">-- Select a Running Job --</option>
+			</select>
+			</p>
+			<select id="runningidlist">
+				<option selected="selected" value="1">-- Select a Running ID--</option>
+			</select>
+			</p>
+			<button id="q4" class = "query_button">Query</button>
+		</div>
+
+		<div class="right">
+			<div style="height: 30px;">
+				<span id='map_progress_text' style="width: 74px; text-align: right;"> 0% </span>
+				<span class="progress" style="width: 240px; left: 330px;">
+        			<span id='map_progress' class="value"  style="width: 0%; left:0px"></span>
+				</span>
+			</div>
+			<br>
+			<div style="height: 30px;">
+				<span id='reduce_progress_text' style="width: 74px; text-align: right;">0%</span>
+    			<span class="progress" style="width: 240px; left: 330px;">
+        			<span id='reduce_progress' class="value" style="width: 0%; left:0px"></span>
+				</span>
+			</div>
+			<br>
+			<div id="runningstatustable">
+				<table>
+					<tbody>
+					<tr>
+						<th>Start Time</th>	<td> </td><th>Elapsed Time</th><td> </td>
+					</tr>
+					<tr>
+						<th>ETA</th><td> </td>
+					</tr>
+					<tbody>
+				</table>
+			</div>
+		</div>
+		<div class="clear"></div>
+	</div>
+
 </div>
 
 </body>
