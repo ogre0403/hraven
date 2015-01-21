@@ -152,7 +152,8 @@ public class AppSummaryService {
         if (result != null && !result.isEmpty()) {
           rowCount++;
           colCount += result.size();
-          resultSize += result.getWritableSize();
+          // resultSize += result.getWritableSize();
+          // not support in HBase 0.98
           AppKey appKey = getNewAppKeyFromResult(result, startTime, endTime);
           if(appKey != null) {
             newAppsKeys.add(appKey);
@@ -630,7 +631,8 @@ public class AppSummaryService {
         if (result != null && !result.isEmpty()) {
           rowCount++;
           colCount += result.size();
-          resultSize += result.getWritableSize();
+          //resultSize += result.getWritableSize();
+          // not support in HBase 0.98
           apptimer.start();
           byte[] rowKey = result.getRow();
           AppAggregationKey appAggKey = aggConv.fromBytes(rowKey);

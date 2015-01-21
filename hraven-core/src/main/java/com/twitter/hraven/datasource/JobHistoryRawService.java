@@ -26,21 +26,17 @@ import java.util.TreeSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.CompareFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
-import org.apache.hadoop.hbase.filter.PrefixFilter;
-import org.apache.hadoop.hbase.filter.SingleColumnValueExcludeFilter;
-import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
-import org.apache.hadoop.hbase.util.Bytes;
+
 
 import com.twitter.hraven.Constants;
 import com.twitter.hraven.JobId;
 import com.twitter.hraven.QualifiedJobId;
 import com.twitter.hraven.Range;
 import com.twitter.hraven.util.BatchUtil;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.*;
+import org.apache.hadoop.hbase.util.Bytes;
 
 /**
  * Used to store and retrieve {@link ProcessRecord} objects.

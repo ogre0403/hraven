@@ -33,7 +33,7 @@ public class RunningJobID implements Runnable {
     private static String jobs_url;
     private static JsonParser parser = new JsonParser();
     private static DefaultHttpClient httpClient = new DefaultHttpClient();
-    private static String STATE = "RUNNING";
+//    private static String STATE = "RUNNING";
     private static int INTERVAL = 30000;
     private static String RUNNING_TABLE = "job_running";
 
@@ -46,12 +46,16 @@ public class RunningJobID implements Runnable {
     public RunningJobID(Properties ps) {
         // initial configuration here
         conf = HBaseConfiguration.create();
-        jobs_url = ps.getProperty("running.yarn_rest","http://127.0.0.1:8088/ws/v1/cluster/apps/");
+        //http://192.168.56.201:8088/ws/v1/cluster/apps/?state=RUNNING
+        //jobs_url = ps.getProperty("running.yarn_rest","http://127.0.0.1:8088/ws/v1/cluster/apps/");
+        String restserver = ps.getProperty("running.yarn.RM_web","http://192.168.56.201:8088");
+        jobs_url = restserver+"/ws/v1/cluster/apps/?state=RUNNING";
         INTERVAL = Integer.parseInt(ps.getProperty("running.interval"));
         ZK = ps.getProperty("zookeeper","127.0.0.1");
         conf.set("hbase.zookeeper.quorum",ZK);
 
-        LOG.info("running.yarn_rest: " + jobs_url);
+        LOG.info("running.yarn.restserver: " + restserver);
+        LOG.info("running.yarn.resturl: " + jobs_url);
         LOG.info("zookeeper: " + ZK);
         LOG.info("running.interval: " + INTERVAL);
 
@@ -140,7 +144,7 @@ public class RunningJobID implements Runnable {
 
         for(final JsonElement type : jaa) {
             JsonObject coords = type.getAsJsonObject();
-            if(coords.getAsJsonPrimitive("state").getAsString().equals(STATE)){
+          //  if(coords.getAsJsonPrimitive("state").getAsString().equals(STATE)){
                 String username = coords.getAsJsonPrimitive("user").getAsString();
                 String jobname = coords.getAsJsonPrimitive("name").getAsString();
                 String jobid = coords.getAsJsonPrimitive("id").getAsString();
@@ -162,7 +166,7 @@ public class RunningJobID implements Runnable {
                         sb.append(ExtendConstants.SEP5).append(jobid);
                     }
                 }
-            }
+           // }
         }
         return tmpdata;
     }

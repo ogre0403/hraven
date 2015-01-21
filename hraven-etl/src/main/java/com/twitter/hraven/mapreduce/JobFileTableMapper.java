@@ -124,7 +124,8 @@ public class JobFileTableMapper extends
   /**
    * @return the value class for the job output data.
    */
-  public static Class<? extends Writable> getOutputValueClass() {
+//  public static Class<? extends Writable> getOutputValueClass() {
+  public static Class<?> getOutputValueClass() {
     return Put.class;
   }
 

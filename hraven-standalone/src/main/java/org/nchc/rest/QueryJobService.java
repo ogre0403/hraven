@@ -62,7 +62,7 @@ public class QueryJobService {
         this.idService = new JobHistoryByIdService(this.myConf);
         this.httpClient = new DefaultHttpClient();
         this.parser = new JsonParser();
-        this.progress_url_prefix = myConf.get("yarn.rest","http://192.168.56.201:8088")+ "/proxy/";
+        this.progress_url_prefix = myConf.get("running.yarn.PROXY_web","http://192.168.56.201:8089")+ "/proxy/";
         this.progress_url_postfix = "/ws/v1/mapreduce/jobs";
     }
 

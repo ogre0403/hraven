@@ -453,7 +453,8 @@ public class JobHistoryService {
         if (result != null && !result.isEmpty()) {
           rowCount++;
           colCount += result.size();
-          resultSize += result.getWritableSize();
+          //resultSize += result.getWritableSize();
+          // not support in HBase 0.98
           JobKey currentKey = jobKeyConv.fromBytes(result.getRow());
           // empty runId is special cased -- we need to treat each job as it's own flow
           if (currentFlow == null || !currentFlow.contains(currentKey) ||

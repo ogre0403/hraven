@@ -166,13 +166,13 @@
       <version>0.9.17-SNAPSHOT</version>
     </dependency>
 
-    <dependency>
-      <groupId>com.twitter.hraven</groupId>
-      <artifactId>hraven-core</artifactId>
-      <version>0.9.17-SNAPSHOT</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.twitter.hraven</groupId>-->
+      <!--<artifactId>hraven-core</artifactId>-->
+      <!--<version>0.9.17-SNAPSHOT</version>-->
+      <!--<type>test-jar</type>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
 
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -234,8 +234,14 @@
           <scope>provided</scope>
       </dependency>
     <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-server</artifactId>
+        <version>${hbase.version}</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
+      <artifactId>hbase-client</artifactId>
       <version>${hbase.version}</version>
       <scope>provided</scope>
       <exclusions>
@@ -325,7 +331,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
+      <artifactId>hbase-client</artifactId>
       <version>${hbase.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
