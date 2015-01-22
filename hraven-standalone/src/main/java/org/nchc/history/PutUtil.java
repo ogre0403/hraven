@@ -86,6 +86,13 @@ public class PutUtil {
         return rawBytes;
     }
 
+    public static Double getJobCost(long su_millis, double su_price){
+        double su_hour = su_millis / (3600000.0);
+        return su_price * su_hour;
+
+    }
+
+
     public static Double getJobCost(Long mbMillis, String machineType, Properties ps) {
         Double computeTco = 0.0;
         Long machineMemory = 0L;

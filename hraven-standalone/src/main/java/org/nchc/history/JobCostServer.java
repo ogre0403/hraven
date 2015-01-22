@@ -427,18 +427,29 @@
                         taskputs.addAll(puts);
                     }
 
-                    /** post processing steps on job puts and job conf puts */
+                    // nchc su function is most equivalent to MegaByteMill
+                    // I DO NOT change the variable from MegaByteMillis to SU
+                    // just modify the web UI display name
+                    Long su = ((ExtendJobHistoryFileParserHadoop2)historyFileParser).
+                            getSU(Long.parseLong(this.prop.getProperty("CPC","1")));
+                    LOG.debug(jobKey.getJobId() +" SU = " + su);
+
+
+                    /** post processing steps on job puts and job conf puts
                     Long mbMillis = historyFileParser.getMegaByteMillis();
                     if (mbMillis == null) {
                         throw new ProcessingException(" Unable to get megabyte millis calculation for this record!" + jobKey);
                     }
-
-                    List<Put> mbPut = PutUtil.getMegaByteMillisPut(mbMillis, jobKey);
-                    LOG.info("Writing mega byte millis  puts to " + Constants.HISTORY_TABLE);
+                     */
+                    List<Put> mbPut = PutUtil.getMegaByteMillisPut(su, jobKey);
+                    LOG.info("Writing SU puts to " + Constants.HISTORY_TABLE);
                     jobputs.addAll(mbPut);
 
+
                     /** post processing steps to get cost of the job */
-                    Double jobCost = PutUtil.getJobCost(mbMillis, macType, this.prop);
+//                    Double jobCost = PutUtil.getJobCost(su, macType, this.prop);
+                    Double jobCost = PutUtil.getJobCost(su, Double.parseDouble(this.prop.getProperty("SU", "1.7")));
+                    LOG.debug(jobKey.getJobId() +" cost = " + jobCost);
                     if (jobCost == null) {
                         throw new ProcessingException(" Unable to get job cost calculation for this record!"
                                 + jobKey);
@@ -542,25 +553,4 @@
         }
 
 
-/*
-      public static void main(String[] args) throws Exception {
-
-        Properties ps = PutUtil.loadCostProperties("cost.properties");
-
-        LOG.info("START embedded jetty server...");
-        RestServer server = new RestServer(ps);
-        server.startUp();
-
-        LOG.info("START scan running job thread...");
-        RunningJobID task = new RunningJobID(ps);
-        Thread t = new Thread(task);
-        t.start();
-
-        LOG.info("START parse history");
-        ToolRunner.run(new JobCostServer(), args);
-
-        //TODO: close HTable
-
-      }
-*/
     }

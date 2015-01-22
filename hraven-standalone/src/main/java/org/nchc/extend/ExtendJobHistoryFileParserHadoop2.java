@@ -2,14 +2,7 @@ package org.nchc.extend;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.twitter.hraven.JobDetails;
 import com.twitter.hraven.JobHistoryKeys;
@@ -26,12 +19,10 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
-import org.apache.commons.configuration.ConversionException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapred.JobHistoryCopy.RecordTypes;
@@ -79,6 +70,9 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
      */
     private long mapSlotMillis = 0L;
     private long reduceSlotMillis = 0L;
+
+    private Map<String, DurationPair> mapAttemptMap = new HashMap<String, DurationPair>();
+    private Map<String, DurationPair> reduceAttemptMap = new HashMap<String, DurationPair>();
 
     private long startTime = ExtendConstants.NOTFOUND_VALUE;
     private long endTime = ExtendConstants.NOTFOUND_VALUE;
@@ -222,6 +216,8 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         this.jobKeyBytes = jobKeyConv.toBytes(jobKey);
         this.jobKeyByTS = jobKeyConv.toBytesSortByTS(jobKey);
         setJobId(jobKey.getJobId().getJobIdString());
+        mapAttemptMap.clear();
+        reduceAttemptMap.clear();
 
         try {
             FSDataInputStream in =
@@ -503,7 +499,6 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
      */
     private void processRecords(Hadoop2RecordType recType, JSONObject eventDetails)
             throws JSONException {
-
         switch (recType) {
             case JobFinished:
                 // this setting is needed since the job history file is missing
@@ -520,11 +515,12 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
                 Put pJob = new Put(this.jobKeyBytes);
                 iterateAndPreparePuts(eventDetails, pJob, recType);
                 this.jobPuts.add(pJob);
-
+                LOG.debug("add to Put list | recType = [ "+recType+" ] | RK = [ "+ Bytes.toStringBinary(jobKeyBytes)+" ]");
                 // for scan Job sort by TS
                 Put pJobT = new Put(this.jobKeyByTS);
                 iterateAndPreparePuts(eventDetails, pJobT, recType);
                 this.jobPuts.add(pJobT);
+                LOG.debug("add to Put list | recType = [ "+recType+" ] | RK = [ "+ Bytes.toStringBinary(jobKeyBytes)+" ]");
                 break;
 
             case AMStarted:
@@ -536,48 +532,39 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
                         Bytes.toBytes(RecordTypes.Task.toString()));
                 iterateAndPreparePuts(eventDetails, pAM, recType);
                 taskPuts.add(pAM);
+                LOG.debug("add to task list | recType = [ "+recType+" ] | RK = [ "+ Bytes.toStringBinary(amAttemptIdKeyBytes)+" ]");
                 break;
 
             case MapAttemptStarted:
-            case MapAttemptFinished:
-            case MapAttemptUnsuccessfulCompletion:
-                byte[] taskMAttemptIdKeyBytes =
-                        getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
-                                eventDetails.getString(ATTEMPTID), ExtendConstants.MAP_ATTEMPT_TYPE);
-                Put pMTaskAttempt = new Put(taskMAttemptIdKeyBytes);
-                pMTaskAttempt.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.RECORD_TYPE_COL_BYTES,
-                        Bytes.toBytes(RecordTypes.MapAttempt.toString()));
-                iterateAndPreparePuts(eventDetails, pMTaskAttempt, recType);
-                this.taskPuts.add(pMTaskAttempt);
+                keepAttemptStartTime(recType, eventDetails,mapAttemptMap);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.MapAttempt);
                 break;
-
-
+            case MapAttemptFinished:
+                keepAttemptEndTime(recType, eventDetails,mapAttemptMap);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.MapAttempt);
+                break;
+            case MapAttemptUnsuccessfulCompletion:
+                keepAttemptFailTime(recType, eventDetails, mapAttemptMap);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.MapAttempt);
+                break;
             case ReduceAttemptStarted:
+                keepAttemptStartTime(recType, eventDetails,reduceAttemptMap);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.ReduceAttempt);
+                break;
             case ReduceAttemptFinished:
+                keepAttemptEndTime(recType, eventDetails,reduceAttemptMap);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.ReduceAttempt);
+                break;
             case ReduceAttemptUnsuccessfulCompletion:
-                byte[] taskRAttemptIdKeyBytes =
-                        getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
-                                eventDetails.getString(ATTEMPTID), ExtendConstants.REDUCE_ATTEMPT_TYPE);
-                Put pRTaskAttempt = new Put(taskRAttemptIdKeyBytes);
-                pRTaskAttempt.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.RECORD_TYPE_COL_BYTES,
-                        Bytes.toBytes(RecordTypes.ReduceAttempt.toString()));
-                iterateAndPreparePuts(eventDetails, pRTaskAttempt, recType);
-                this.taskPuts.add(pRTaskAttempt);
+                keepAttemptFailTime(recType, eventDetails, reduceAttemptMap);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.ReduceAttempt);
                 break;
 
 
             case TaskAttemptFinished:
             case TaskAttemptStarted:
             case TaskAttemptUnsuccessfulCompletion:
-                byte[] taskAttemptIdKeyBytes =
-                        getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
-                                eventDetails.getString(ATTEMPTID), ExtendConstants.OTHER_ATTEMPT_TYPE);
-                Put pTaskAttempt = new Put(taskAttemptIdKeyBytes);
-                //TODO: see if define another attempt type in RecordTypes
-                pTaskAttempt.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.RECORD_TYPE_COL_BYTES,
-                        Bytes.toBytes(RecordTypes.Task.toString()));
-                iterateAndPreparePuts(eventDetails, pTaskAttempt, recType);
-                taskPuts.add(pTaskAttempt);
+                addToTaskAttemptPutList(recType, eventDetails, RecordTypes.Task);
                 break;
 
             case TaskFailed:
@@ -591,11 +578,85 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
                         Bytes.toBytes(RecordTypes.Task.toString()));
                 iterateAndPreparePuts(eventDetails, pTask, recType);
                 taskPuts.add(pTask);
+                LOG.debug("add to task list | recType = [ "+recType+" ] | RK = [ " + Bytes.toStringBinary(taskIdKeyBytes)+" ]");
                 break;
             default:
                 LOG.error("Check if recType was modified and has new members?");
                 throw new ProcessingException("Check if recType was modified and has new members? " + recType);
         }
+    }
+
+    private void keepAttemptStartTime(Hadoop2RecordType recType,
+                          JSONObject eventDetails,
+                          Map<String, DurationPair> map)throws JSONException{
+        String attId = eventDetails.getString(ATTEMPTID);
+        long starttime = eventDetails.getLong("startTime");
+        if (map.containsKey(attId)) {
+            map.get(attId).setStart(starttime);
+            LOG.debug( "| recType = [ "+recType+" ] | "+ "UPDATE ts "+ map.get(attId) + " for "+attId);
+        } else {
+            map.put(attId,new DurationPair(starttime,0,0));
+            LOG.debug("| recType = [ "+recType+" ] | "+ "CREATE ts " + map.get(attId) +"for " + attId);
+        }
+    }
+
+    private void keepAttemptEndTime(Hadoop2RecordType recType,
+                                          JSONObject eventDetails,
+                                          Map<String, DurationPair> map)throws JSONException{
+        String attId = eventDetails.getString(ATTEMPTID);
+        long endtime = eventDetails.getLong("finishTime");
+        if (map.containsKey(attId)) {
+            map.get(attId).setEnd(endtime);
+            LOG.debug("| recType = [ "+recType+" ] | "+ "UPDATE ts "+ map.get(attId) + " for "+attId);
+        } else {
+            map.put(attId,new DurationPair(0,endtime,0));
+            LOG.debug("| recType = [ "+recType+" ] | "+ "CREATE ts " + map.get(attId) +"for " + attId);
+        }
+    }
+
+
+    private void keepAttemptFailTime(Hadoop2RecordType recType,
+                                    JSONObject eventDetails,
+                                    Map<String, DurationPair> map)throws JSONException{
+        String attId = eventDetails.getString(ATTEMPTID);
+        long endtime = eventDetails.getLong("finishTime");
+        if (map.containsKey(attId)) {
+            map.get(attId).setFail(endtime);
+            LOG.debug("| recType = [ "+recType+" ] | "+ "UPDATE ts "+ map.get(attId) + " for "+attId);
+        } else {
+            map.put(attId,new DurationPair(0,0,endtime));
+            LOG.debug("| recType = [ "+recType+" ] | "+  "CREATE ts " + map.get(attId) +"for " + attId);
+        }
+    }
+
+    private void addToTaskAttemptPutList(Hadoop2RecordType recType,
+                                         JSONObject eventDetails,
+                                         RecordTypes type)throws JSONException{
+        String  attemptType;
+        switch(type){
+            case MapAttempt:
+                attemptType = ExtendConstants.MAP_ATTEMPT_TYPE;
+                break;
+            case ReduceAttempt:
+                attemptType = ExtendConstants.REDUCE_ATTEMPT_TYPE;
+                break;
+            case Task:
+                attemptType = ExtendConstants.OTHER_ATTEMPT_TYPE;
+                break;
+            default:
+                LOG.error("Check if valid attempt type? " + type);
+                throw new ProcessingException("Check if valid attempt type? " + type);
+        }
+
+        byte[] taskAttemptIdKeyBytes =
+                getAttemptKey(TASK_ATTEMPT_PREFIX, this.jobNumber,
+                        eventDetails.getString(ATTEMPTID), attemptType);
+        Put pTaskAttempt = new Put(taskAttemptIdKeyBytes);
+        pTaskAttempt.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.RECORD_TYPE_COL_BYTES,
+                Bytes.toBytes(type.toString()));
+        iterateAndPreparePuts(eventDetails, pTaskAttempt, recType);
+        this.taskPuts.add(pTaskAttempt);
+        LOG.debug("add to task list | recType = [ "+recType+" ] | RK = [ "+ Bytes.toStringBinary(taskAttemptIdKeyBytes)+" ]");
     }
 
     /**
@@ -629,7 +690,7 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
      */
     private void populatePut(Put p, byte[] family, String key, long value) {
 
-        byte[] valueBytes = null;
+        byte[] valueBytes;
         valueBytes = (value != 0L) ? Bytes.toBytes(value) : ExtendConstants.ZERO_LONG_BYTES;
         byte[] qualifier = Bytes.toBytes(getKey(key).toLowerCase());
         p.add(family, qualifier, valueBytes);
@@ -643,7 +704,7 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
      * @throws IllegalArgumentException if new key is encountered
      */
     byte[] getValue(String key, int value) {
-        byte[] valueBytes = null;
+        byte[] valueBytes;
         Class<?> clazz = JobHistoryKeys.KEY_TYPES.get(JobHistoryKeys.valueOf(key));
         if (clazz == null) {
             throw new IllegalArgumentException(" unknown key " + key + " encountered while parsing "
@@ -680,7 +741,7 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
      * @param String value
      */
     private void populatePut(Put p, byte[] family, String key, String value) {
-        byte[] valueBytes = null;
+        byte[] valueBytes;
         valueBytes = Bytes.toBytes(value);
         byte[] qualifier = Bytes.toBytes(getKey(key).toLowerCase());
         p.add(family, qualifier, valueBytes);
@@ -715,7 +776,7 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
                             Bytes.add(ExtendConstants.REDUCE_COUNTER_COLUMN_PREFIX_BYTES, ExtendConstants.SEP_BYTES);
                     break;
                 default:
-                    throw new IllegalArgumentException("Unknown counter type " + key.toString());
+                    throw new IllegalArgumentException("Unknown counter type " + key);
             }
         } catch (IllegalArgumentException iae) {
             throw new ProcessingException("Unknown counter type " + key, iae);
@@ -770,8 +831,8 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         }
         long yarnSchedulerMinMB = this.jobConf.getLong(ExtendConstants.YARN_SCHEDULER_MIN_MB,
                 ExtendConstants.DEFAULT_YARN_SCHEDULER_MIN_MB);
-        long updatedCounterValue = 0L;
-        long memoryMb = 0L;
+        long updatedCounterValue;
+        long memoryMb;
         String key;
         if (ExtendConstants.SLOTS_MILLIS_MAPS.equals(counterName)) {
             key = ExtendConstants.MAP_MEMORY_MB_CONF_KEY;
@@ -822,23 +883,6 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
     }
 
     /**
-     * Returns the Task ID or Task Attempt ID, stripped of the leading job ID, appended to the job row
-     * key.
-     */
-    public byte[] getTaskKey(String prefix, String jobNumber, String fullId) {
-        String taskComponent = fullId;
-        if (fullId == null) {
-            taskComponent = "";
-        } else {
-            String expectedPrefix = prefix + jobNumber + "_";
-            if ((fullId.startsWith(expectedPrefix)) && (fullId.length() > expectedPrefix.length())) {
-                taskComponent = fullId.substring(expectedPrefix.length());
-            }
-        }
-        return taskKeyConv.toBytes(new TaskKey(this.jobKey, taskComponent));
-    }
-
-    /**
      * Returns the AM Attempt id stripped of the leading job ID, appended to the job row key.
      */
     public byte[] getAMKey(String prefix, String fullId) {
@@ -866,7 +910,7 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
 
     /**
      * utitlity function for printing all puts
-     */
+
     public void printAllPuts(List<Put> p) {
         for (Put p1 : p) {
             Map<byte[], List<KeyValue>> d = p1.getFamilyMap();
@@ -881,67 +925,21 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
             }
         }
     }
-
-    /**
-     * calculate mega byte millis puts as:
-     * if not uberized:
-     *        map slot millis * mapreduce.map.memory.mb
-     *        + reduce slot millis * mapreduce.reduce.memory.mb
-     *        + yarn.app.mapreduce.am.resource.mb * job runtime
-     * if uberized:
-     *        yarn.app.mapreduce.am.resource.mb * job run time
      */
+
     @Override
+    @Deprecated
     public Long getMegaByteMillis() {
-
-        if (endTime == ExtendConstants.NOTFOUND_VALUE || startTime == ExtendConstants.NOTFOUND_VALUE)
-        {
-            throw new ProcessingException("Cannot calculate megabytemillis for " + jobKey
-                    + " since one or more of endTime " + endTime + " startTime " + startTime
-                    + " not found!");
-        }
-
-        long jobRunTime = 0L;
-        long amMb = 0L;
-        long mapMb = 0L;
-        long reduceMb = 0L;
-
-        jobRunTime = endTime - startTime;
-
-        if (jobConf == null) {
-            LOG.error("job conf is null? for job key: " + jobKey.toString());
-            return null;
-        }
-
-        // get am memory mb, map memory mb, reducer memory mb from job conf
-        try {
-            amMb = jobConf.getLong(ExtendConstants.AM_MEMORY_MB_CONF_KEY, ExtendConstants.NOTFOUND_VALUE);
-            mapMb = jobConf.getLong(ExtendConstants.MAP_MEMORY_MB_CONF_KEY,  ExtendConstants.NOTFOUND_VALUE);
-            reduceMb = jobConf.getLong(ExtendConstants.REDUCE_MEMORY_MB_CONF_KEY,  ExtendConstants.NOTFOUND_VALUE);
-        } catch (ConversionException ce) {
-            LOG.error(" Could not convert to long " + ce.getMessage());
-            throw new ProcessingException(
-                    " Can't calculate megabytemillis since conversion to long failed", ce);
-        }
-        if (amMb == ExtendConstants.NOTFOUND_VALUE ) {
-            throw new ProcessingException("Cannot calculate megabytemillis for " + jobKey
-                    + " since " + ExtendConstants.AM_MEMORY_MB_CONF_KEY + " not found!");
-        }
-
-        Long mbMillis = 0L;
-        if (uberized) {
-            mbMillis = amMb * jobRunTime;
-        } else {
-            mbMillis = (mapMb * mapSlotMillis) + (reduceMb * reduceSlotMillis) + (amMb * jobRunTime);
-        }
-
-        LOG.debug("For " + jobKey.toString() + " " + ExtendConstants.MEGABYTEMILLIS + " is " + mbMillis
-                + " since \n uberized: " + uberized + " \n " + "mapMb: " + mapMb + " mapSlotMillis: "
-                + mapSlotMillis + " \n " + " reduceMb: " + reduceMb + " reduceSlotMillis: "
-                + reduceSlotMillis + " \n " + " amMb: " + amMb + " jobRunTime: " + jobRunTime
-                + " start time: " + this.startTime + " endtime " + this.endTime);
-
-        return mbMillis;
+        /**
+         * calculate mega byte millis puts as:
+         * if not uberized:
+         *        map slot millis * mapreduce.map.memory.mb
+         *        + reduce slot millis * mapreduce.reduce.memory.mb
+         *        + yarn.app.mapreduce.am.resource.mb * job runtime
+         * if uberized:
+         *        yarn.app.mapreduce.am.resource.mb * job run time
+         */
+        return 0L;
     }
 
     /**
@@ -952,6 +950,81 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
     @Override
     public JobDetails getJobDetails() {
         return null;
+    }
+
+    public long getSU(long cpc){
+        long total_su = 0L;
+
+        if (endTime == ExtendConstants.NOTFOUND_VALUE || startTime == ExtendConstants.NOTFOUND_VALUE)
+        {
+            throw new ProcessingException("Cannot calculate megabytemillis for " + jobKey
+                    + " since one or more of endTime " + endTime + " startTime " + startTime
+                    + " not found!");
+        }
+
+        // AM SU
+        long jobRunTime = endTime - startTime;
+        total_su = total_su + jobRunTime *cpc;
+        LOG.debug("AM = " + "{"+startTime + ", "+endTime+"}");
+
+        // mapper SU
+        total_su += calculateSU(mapAttemptMap,cpc);
+
+        // calculate reducer SU
+        total_su += calculateSU(reduceAttemptMap,cpc);
+
+        return total_su;
+    }
+
+    private long calculateSU(Map<String, DurationPair> map, long cpc){
+        long total =0L;
+        for (Object o : map.entrySet()) {
+            Map.Entry<String, DurationPair> entry = (Map.Entry) o;
+            LOG.debug(entry.getKey() + " = " + entry.getValue());
+
+            long end = entry.getValue().getEnd();
+            long fail = entry.getValue().getFail();
+
+            if(end > 0 && fail >0){
+                throw new ProcessingException("task attempt has both normal finish time and failure finish time");
+            }
+
+            long interval = (end > fail) ?
+                    (entry.getValue().getEnd() - entry.getValue().getStart()):
+                    (entry.getValue().getFail() - entry.getValue().getStart());
+            total = total + cpc * interval;
+        }
+        return total;
+    }
+
+    private class DurationPair{
+        private long start = 0L;
+        private long end = 0L;
+        private long failend =0L;
+
+        public DurationPair(long s, long e, long f){
+            this.start = s;
+            this.end =e;
+            this.failend =f;
+        }
+
+        public  DurationPair(long s, long e){
+            this.start = s;
+            this.end =e;
+            this.failend = 0L;
+        }
+
+        public void setStart(long s){this.start = s;}
+        public void setEnd(long e){this.end = e;}
+        public void setFail(long f){this.failend =f;}
+        public long getStart(){return this.start;}
+        public long getEnd(){return this.end;}
+        public long getFail(){return this.failend;}
+
+        @Override
+        public String toString() {
+            return "{" + start +  ", "+end + ", "+ failend +"}";
+        }
     }
 
 }

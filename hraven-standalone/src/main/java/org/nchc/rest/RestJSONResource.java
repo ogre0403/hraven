@@ -54,7 +54,6 @@ public class RestJSONResource {
   };
 
 
-    /**TODO: POST and UserJobDAO*/
     @GET
     @Path("job/{cluster}/{user}/{jobname}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -97,7 +96,6 @@ public class RestJSONResource {
         return getQueryService().getAllJobName(cluster,user);
     }
 
-    /**TODO: POST and UserJobDAO*/
     @GET
     @Path("runList/{cluster}/{user}/{jobname}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -118,7 +116,7 @@ public class RestJSONResource {
     Stopwatch timer = new Stopwatch().start();
 
     JobDetails jobDetails  = (jobId == null)?  null:
-          getQueryService().getJobByJobID(cluster, jobId, counter);
+          getQueryService().getJobByJobID(cluster, jobId, counter, false);
 
     timer.stop();
     if (jobDetails != null) {
@@ -139,9 +137,11 @@ public class RestJSONResource {
                                            @PathParam("jobId") String jobId) throws IOException {
     LOG.info("Fetching tasks info for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
-    JobDetails jobDetails =null;
+    JobDetails jobDetails = getQueryService().getJobByJobID(cluster, jobId, false, true);
     timer.stop();
+
     List<TaskDetails> tasks = jobDetails.getTasks();
+
     if(tasks != null && !tasks.isEmpty()) {
       LOG.info("For endpoint /tasks/" + cluster + "/" + jobId + ", fetched "
           + tasks.size() + " tasks, spent time " + timer);

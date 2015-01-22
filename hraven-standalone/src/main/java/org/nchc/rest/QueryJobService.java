@@ -4,10 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.twitter.hraven.JobDetails;
-import com.twitter.hraven.JobKey;
-import com.twitter.hraven.QualifiedJobId;
+import com.twitter.hraven.*;
 import com.twitter.hraven.datasource.JobHistoryByIdService;
+import com.twitter.hraven.datasource.TaskKeyConverter;
 import com.twitter.hraven.util.ByteUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,6 +42,7 @@ public class QueryJobService {
     private final HTable runningTable;
     private final JobHistoryByIdService idService;
     private final ExtendJobKeyConverter jobKeyConv = new ExtendJobKeyConverter();
+    private final TaskKeyConverter taskKeyConv = new TaskKeyConverter();
 
 
     private DefaultHttpClient httpClient;
@@ -164,7 +164,9 @@ public class QueryJobService {
         return nameList;
     }
 
-    public JobDetails getJobByJobID(String cluster, String jobId,boolean getCounter) throws IOException {
+    public JobDetails getJobByJobID(String cluster, String jobId,
+                                    boolean getCounter,
+                                    boolean populateTasks) throws IOException {
         QualifiedJobId qjid = new QualifiedJobId(cluster, jobId);
         JobDetails job = null;
         JobKey key = idService.getJobKeyById(qjid);
@@ -180,6 +182,10 @@ public class QueryJobService {
             if (result != null && !result.isEmpty()) {
                 job = new JobDetails(key);
                 job.populate(result);
+
+                if (populateTasks) {
+                    populateTasks(job);
+                }
             }
         }
         return job;
@@ -265,6 +271,44 @@ public class QueryJobService {
 
         return new RunningStatusDAO(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
     }
+
+    private Scan getTaskScan(JobKey jobKey) {
+        byte[] startKey = Bytes.add(jobKeyConv.toBytes(jobKey), Constants.SEP_BYTES, Bytes.toBytes("a"));
+        Scan scan = new Scan();
+        scan.setStartRow(startKey);
+        // only return tasks for this job
+        scan.setFilter(new WhileMatchFilter(new PrefixFilter(startKey)));
+        // expect a lot of tasks on average
+        scan.setCaching(500);
+        return scan;
+    }
+
+    private void populateTasks(JobDetails job) throws IOException {
+        //TODO: get task attempt detail form job_history_task HTable
+        Scan scan = getTaskScan(job.getJobKey());
+        ResultScanner scanner = this.taskTable.getScanner(scan);
+        try {
+            // advance through the scanner til we pass keys matching the job
+            for (Result currentResult : scanner) {
+                if (currentResult == null || currentResult.isEmpty()) {
+                    break;
+                }
+
+                TaskKey taskKey = taskKeyConv.fromBytes(currentResult.getRow());
+                TaskDetails task = new TaskDetails(taskKey);
+                task.populate(currentResult
+                        .getFamilyMap(Constants.INFO_FAM_BYTES));
+                job.addTask(task);
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Added " + job.getTasks().size() + " tasks to job "
+                        + job.getJobKey().toString());
+            }
+        } finally {
+            scanner.close();
+        }
+    }
+
 
     public void close() throws IOException {
         historyTable.close();
