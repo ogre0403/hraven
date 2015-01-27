@@ -16,6 +16,8 @@
     package org.nchc.history;
 
     import java.io.IOException;
+    import java.io.PrintWriter;
+    import java.io.StringWriter;
     import java.util.*;
 
     import com.twitter.hraven.*;
@@ -32,14 +34,11 @@
     import org.apache.commons.logging.Log;
     import org.apache.commons.logging.LogFactory;
     import org.apache.hadoop.conf.Configuration;
-    import org.apache.hadoop.conf.Configured;
     import org.apache.hadoop.fs.*;
     import org.apache.hadoop.hbase.HBaseConfiguration;
     import org.apache.hadoop.hbase.KeyValue;
     import org.apache.hadoop.hbase.client.*;
     import org.apache.hadoop.util.GenericOptionsParser;
-    import org.apache.hadoop.util.Tool;
-    import org.apache.hadoop.util.ToolRunner;
     import org.apache.log4j.Level;
     import org.apache.log4j.Logger;
     import org.nchc.extend.ExtendJobHistoryByIdService;
@@ -57,7 +56,7 @@
      * {@link com.twitter.hraven.etl.ProcessRecord#getMaxModificationTimeMillis()} so it can be used as the
      * starting mark for the next run if the previous run is successful
      */
-    public class JobCostServer extends Configured implements Tool {
+    public class JobCostServer extends Thread {
 
       public final static String NAME = JobCostServer.class.getSimpleName();
       private static Log LOG = LogFactory.getLog(JobCostServer.class);
@@ -77,12 +76,11 @@
       private FileSystem hdfs;
       private ExtendJobHistoryRawService rawService = null;
       private ExtendJobHistoryByIdService jobHistoryByIdService = null;
-      //private AppVersionService appVersionService = null;
+      private ProcessRecordService processRecordService = null;
       private HTable rawTable = null;
       private HTable jobTable = null;
       private HTable taskTable = null;
       private HashMap<JobFile,FileStatus> jobstatusmap = null;
-      //private static String costdetail = "cost.properties";
       private static String macType = "default";
 
       private static String cluster;
@@ -92,9 +90,7 @@
 
       private static int INTERVAL=30000;
       private static Properties prop;
-
-      public JobCostServer() {
-      }
+      private boolean isRunning = true;
 
       public JobCostServer(Properties ps ){
           this.prop = ps;
@@ -102,10 +98,6 @@
           this.inputPath= new Path(ps.getProperty("history.hdfsdir"));
           this.INTERVAL = Integer.parseInt(ps.getProperty("history.interval","40000"));
           this.macType = ps.getProperty("machinetype","default");
-      }
-
-      public JobCostServer(Configuration conf) {
-        super(conf);
       }
 
       /**
@@ -116,7 +108,7 @@
        * @return parsed command line.
        * @throws org.apache.commons.cli.ParseException
        */
-      private static CommandLine parseArgs(String[] args) throws ParseException {
+      private CommandLine parseArgs(String[] args) throws ParseException {
         Options options = new Options();
 
         // Cluster
@@ -182,9 +174,10 @@
         return commandLine;
       }
 
-      private void getArgValue(String[] args) throws Exception{
+      public void getArgValue(String[] args) throws Exception{
           // Grab input args and allow for -Dxyz style arguments
-          hbaseConf = HBaseConfiguration.create(getConf());
+//          hbaseConf = HBaseConfiguration.create(getConf());
+          hbaseConf = HBaseConfiguration.create();
           hbaseConf.setInt("hbase.client.keyvalue.maxsize", 0);
 
           String[] otherArgs = new GenericOptionsParser(hbaseConf, args).getRemainingArgs();
@@ -201,10 +194,12 @@
           hdfs = FileSystem.get(hbaseConf);
           rawService = new ExtendJobHistoryRawService(hbaseConf);
           jobHistoryByIdService = new ExtendJobHistoryByIdService(hbaseConf);
+          processRecordService = new ProcessRecordService(hbaseConf);
           rawTable = new HTable(hbaseConf, Constants.HISTORY_RAW_TABLE_BYTES);
           jobTable = new HTable(hbaseConf,Constants.HISTORY_TABLE_BYTES);
           taskTable = new HTable(hbaseConf,Constants.HISTORY_TASK_TABLE_BYTES);
           jobstatusmap = new HashMap<JobFile, FileStatus>();
+
 
           // Grab the input path argument
           String input;
@@ -256,28 +251,40 @@
           LOG.info("history.interval: " + INTERVAL);
       }
 
-      @Override
-      public int run(String[] args) throws Exception {
 
-        LOG.info("start separate thread to parse history file");
-        getArgValue(args);
+      public void run(){
+          LOG.info("start separate thread to parse history file");
+          while (isRunning) {
+            try {
 
-        while(true) {
-            LOG.debug("NEW history parse iteration....");
-            ProcessRecordService processRecordService = new ProcessRecordService(hbaseConf);
-            FileStatus[] jobFileStatusses = findProcessFiles(processRecordService);
-            if (jobFileStatusses.length < 1) {
-                LOG.info("No newly job, return");
-                Thread.sleep(INTERVAL);
-                continue;
+              FileStatus[] jobFileStatusses;
+              jobFileStatusses = findProcessFiles();
+              if (jobFileStatusses.length < 1) {
+                  LOG.info("No newly job, return");
+                  Thread.sleep(INTERVAL);
+                  continue;
+              }
+              run1(jobFileStatusses);
+            }catch(InterruptedException e)
+            {
+                LOG.info("Thread was inturrupted");
+            }catch (Exception e) {
+              StringWriter errors = new StringWriter();
+              e.printStackTrace(new PrintWriter(errors));
+              LOG.error(errors.toString());
             }
+          }
+      }
+
+      private void run1(FileStatus[] jobFileStatusses) throws Exception {
+            LOG.debug("NEW history parse iteration....");
             LOG.info("Sorting " + jobFileStatusses.length + " job files.");
             Arrays.sort(jobFileStatusses, new FileStatusModificationComparator());
             MinMaxJobFileTracker minMaxJobFileTracker = new MinMaxJobFileTracker();
             int batchCount = BatchUtil.getBatchCount(jobFileStatusses.length, batchSize);
             for (int b = 0; b < batchCount; b++) {
                 LOG.debug("=============   Pre-Process Start ===========");
-                ProcessRecord processRecord = processBatch(jobFileStatusses, b, batchSize, processRecordService, cluster);
+                ProcessRecord processRecord = processBatch(jobFileStatusses, b, batchSize, cluster);
                 minMaxJobFileTracker.track(processRecord.getMinJobId());
                 minMaxJobFileTracker.track(processRecord.getMaxJobId());
                 LOG.debug("=============   Pre-Process End ===========");
@@ -297,10 +304,9 @@
             }
             loadJobTaskDetail(cluster, minMaxJobFileTracker.getMinJobId(), minMaxJobFileTracker.getMaxJobId());
             Thread.sleep(INTERVAL);
-        }
       }
 
-        private FileStatus[] findProcessFiles(ProcessRecordService processRecordService) throws IOException {
+        private FileStatus[] findProcessFiles() throws IOException {
 
             long processingStartMillis = System.currentTimeMillis();
 
@@ -512,14 +518,11 @@
          * @param batchSize
          *          process up to length items (or less as to not exceed the length of
          *          jobFileStatusses
-         * @param processRecordService
-         *          to be used to access create ProcessRecords.
          * @throws java.io.IOException
          *           when the index file cannot be written or moved, or when the HBase
          *           records cannot be created.
          */
-        private ProcessRecord processBatch(FileStatus jobFileStatusses[],int batch, int batchSize,
-               ProcessRecordService processRecordService, String cluster) throws IOException {
+        private ProcessRecord processBatch(FileStatus jobFileStatusses[],int batch, int batchSize, String cluster) throws IOException {
 
             int startIndex = batch * batchSize;
             int endIndexExclusive = Math.min((startIndex + batchSize), jobFileStatusses.length);
@@ -542,4 +545,32 @@
         }
 
 
+        public void stopThread(){
+            try {
+
+                rawService.close();
+                LOG.info("Stop raw service");
+                jobHistoryByIdService.close();
+                LOG.info("Stop jobHistoryByIdService");
+                processRecordService.close();
+                LOG.info("Stop processRecordService");
+                if (rawTable != null){
+                    rawTable.close();
+                    LOG.info("STOP raw Htable");
+                }
+                if (jobTable != null) {
+                    jobTable.close();
+                    LOG.info("STOP jobTable Htable");
+                }
+                if (taskTable != null) {
+                    taskTable.close();
+                    LOG.info("STOP taskTable Htable");
+                }
+            }catch (IOException e){
+                StringWriter errors = new StringWriter();
+                e.printStackTrace(new PrintWriter(errors));
+                LOG.error(errors.toString());
+            }
+            isRunning = false;
+        }
     }

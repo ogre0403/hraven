@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Created by 1403035 on 2015/1/5.
  */
-public class RunningJobID implements Runnable {
+public class RunningJobID extends Thread {
 
     private static Log LOG = LogFactory.getLog(RunningJobID.class);
     private boolean isRunning = true;
@@ -96,7 +96,6 @@ public class RunningJobID implements Runnable {
                 LOG.error(errors.toString());
             }
         }
-
     }
 
     private List<Put> toPuts(Map<String, Map<String,StringBuilder>> data){
@@ -172,9 +171,17 @@ public class RunningJobID implements Runnable {
     }
 
 
-    public void stopThread() throws IOException {
-        htable.close();
+    public void stopThread(){
+        try {
+            LOG.info("stop HTable: job_running ");
+            htable.close();
+        } catch (IOException e) {
+            StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            LOG.error(errors.toString());
+        }
         httpClient.getConnectionManager().shutdown();
+        LOG.info("stop http client");
         this.isRunning = false;
     }
 

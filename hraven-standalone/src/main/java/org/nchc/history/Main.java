@@ -36,22 +36,49 @@ public class Main {
             LOG.error("initial fail, STOP");
             return;
         }
-
         LOG.info("START embedded jetty server...");
         RestServer server = new RestServer(ps);
         server.startUp();
 
         LOG.info("START scan running job thread...");
         RunningJobID task = new RunningJobID(ps);
-        Thread t = new Thread(task);
-        t.start();
+        task.start();
 
         LOG.info("START parse history");
-        ToolRunner.run(new JobCostServer(ps), args);
+        JobCostServer jcs = new JobCostServer(ps);
+        jcs.getArgValue(args);
+        jcs.start();
+
+        addShutdownHook(task,server,jcs);
+    }
+
+    private void addShutdownHook(final RunningJobID task,
+                                        final RestServer server,
+                                        final JobCostServer jcs) {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                LOG.info("STOP scan running job thread...");
+                task.stopThread();
+                task.interrupt();
+
+                try {
+                    LOG.info("STOP embbed Jetty Server");
+                    server.shutDown();
+                } catch (Exception e) {
+                    StringWriter errors = new StringWriter();
+                    e.printStackTrace(new PrintWriter(errors));
+                    LOG.error(errors.toString());
+                }
+
+                LOG.info("STOP JobCostServer thread");
+                jcs.stopThread();
+                jcs.interrupt();
+            }
+        });
     }
 
 
-    public Properties init(String propname){
+    private Properties init(String propname){
         Configuration conf;
         HBaseAdmin hBaseAdmin;
 
@@ -107,10 +134,6 @@ public class Main {
         return ps;
     }
 
-
-    public void close(){
-        //TODO: close HTable and connections gracefully
-    }
 
     private boolean checkHDFS(String path){
         Configuration conf = HBaseConfiguration.create();

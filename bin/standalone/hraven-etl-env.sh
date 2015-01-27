@@ -18,7 +18,7 @@
 
 home=$(dirname $0)
 source $home/../../conf/hraven-env.sh
-source $home/pidfiles.sh
+#source $home/pidfiles.sh
 
 #check if hraven-core.jar and hraven-etl.jar exist
 #if not, create symbolic links to the needed jars
