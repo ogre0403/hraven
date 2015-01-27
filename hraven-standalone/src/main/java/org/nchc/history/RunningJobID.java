@@ -172,8 +172,9 @@ public class RunningJobID implements Runnable {
     }
 
 
-    public void stopThread()
-    {
+    public void stopThread() throws IOException {
+        htable.close();
+        httpClient.getConnectionManager().shutdown();
         this.isRunning = false;
     }
 

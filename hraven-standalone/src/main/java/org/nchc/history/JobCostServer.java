@@ -55,18 +55,7 @@
      * {@link com.twitter.hraven.etl.ProcessState#PREPROCESSED} to indicate that this batch has been
      * successfully updated. The run start time will be recorded in as
      * {@link com.twitter.hraven.etl.ProcessRecord#getMaxModificationTimeMillis()} so it can be used as the
-     * starting mark for the next run if the previous run is successful.
-     *
-     * Given the sloooow copying of 100k little files in Hadoop (pull from HDFS,
-     * push back in) we need to run this as multiple mappers. - Pull the last
-     * process date from HBase. - Insert a new record into HBase with the last date
-     * as the start and the current date as the end. - Create a map-reduce job that
-     * reads whole files, combine, and set a min to have multiple maps. - Then copy
-     * files and emit the smallest job_id as a key and a timestamp as a value - Then
-     * have a combiner that combines keys/values - then pick up the result from the
-     * smallest number - Then update record in HBase with the processing date to
-     * mark that processing finished (or not).
-     *
+     * starting mark for the next run if the previous run is successful
      */
     public class JobCostServer extends Configured implements Tool {
 
