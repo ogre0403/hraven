@@ -19,8 +19,6 @@ import com.google.common.base.Stopwatch;
 import com.twitter.hraven.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -29,29 +27,11 @@ import java.util.List;
 
 /**
  * Main REST resource that handles binding the REST API to the JobHistoryService.
- *
- * TODO: better prevalidation
- * TODO: handle null results with empty json object or response code
  */
 @Path("/api/v1/")
-public class RestJSONResource {
+public class RestJSONResource extends BaseResource{
   private static final Log LOG = LogFactory.getLog(RestJSONResource.class);
-  private static final String SLASH = "/" ;
 
-  private static final Configuration HBASE_CONF = HBaseConfiguration.create();
-
-  private static final ThreadLocal<QueryJobService> queryThreadLocal =
-        new ThreadLocal<QueryJobService>() {
-            @Override
-            protected QueryJobService initialValue() {
-                try {
-                    LOG.info("Initializing queryJobService");
-                    return new QueryJobService(HBASE_CONF);
-                } catch (IOException e) {
-                    throw new RuntimeException("Could not initialize queryJobService", e);
-                }
-            }
-  };
 
 
     @GET
@@ -106,10 +86,10 @@ public class RestJSONResource {
         return getQueryService().getCertainJobAllRunsId(cluster,user,jobname);
     }
 
-  @GET
-  @Path("job/{cluster}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public JobDetails getJobById(@PathParam("cluster") String cluster,
+    @GET
+    @Path("job/{cluster}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public JobDetails getJobById(@PathParam("cluster") String cluster,
                                @QueryParam("jobId") String jobId,
                                @DefaultValue("false")@QueryParam("counter") boolean counter ) throws IOException {
     LOG.info("Fetching JobDetails for jobId=" + jobId);
@@ -127,13 +107,13 @@ public class RestJSONResource {
           + " No jobDetails found, but spent " + timer);
     }
     return jobDetails;
-  }
+    }
 
 
-  @GET
-  @Path("tasks/{cluster}/{jobId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<TaskDetails> getJobTasksById(@PathParam("cluster") String cluster,
+    @GET
+    @Path("tasks/{cluster}/{jobId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<TaskDetails> getJobTasksById(@PathParam("cluster") String cluster,
                                            @PathParam("jobId") String jobId) throws IOException {
     LOG.info("Fetching tasks info for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
@@ -150,7 +130,7 @@ public class RestJSONResource {
           + ", found no tasks, spent time " + timer);
     }
     return tasks;
-  }
+    }
 
 
     @GET
@@ -166,15 +146,6 @@ public class RestJSONResource {
         }
     }
 
-    @POST
-    @Path("running/id/")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Deprecated
-    public List<String> getRunningJobID(UserJobDAO s ) throws IOException {
-        LOG.debug("query running " +  s.getJobname()+ "/" + s.getUsername() +"application id");
-        return getQueryService().getRunningJobID(s.getUsername(),s.getJobname());
-    }
 
 
     @GET
@@ -194,13 +165,19 @@ public class RestJSONResource {
         return getQueryService().getRunningJobName(username);
     }
 
-    private static QueryJobService getQueryService(){
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(String.format("Returning JobHistoryService %s bound to thread %s",
-                    queryThreadLocal.get(), Thread.currentThread().getName()));
-        }
-        return queryThreadLocal.get();
+
+    /* post sample
+    @POST
+    @Path("running/id/")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Deprecated
+    public List<String> getRunningJobID(UserJobDAO s ) throws IOException {
+        LOG.debug("query running " +  s.getJobname()+ "/" + s.getUsername() +"application id");
+        return getQueryService().getRunningJobID(s.getUsername(),s.getJobname());
     }
+    */
 
 
 }
+

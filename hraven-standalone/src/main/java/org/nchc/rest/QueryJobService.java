@@ -22,6 +22,8 @@ import org.nchc.extend.ExtendJobKeyConverter;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -122,11 +124,20 @@ public class QueryJobService {
         ResultScanner scanner = historyTable.getScanner(scan);
         List<JobDetails> jobs = new LinkedList<JobDetails>();
         for (Result result : scanner) {
-            JobKey currentKey = jobKeyConv.fromTsSortedBytes(result.getRow());
-            JobDetails job = new JobDetails(currentKey);
-            LOG.info(currentKey);
-            job.populate(result);
-            jobs.add(job);
+            byte[] bb = result.getRow();
+            LOG.info(Bytes.toStringBinary(bb));
+            try {
+                JobKey currentKey = jobKeyConv.fromTsSortedBytes(bb);
+                JobDetails job = new JobDetails(currentKey);
+                LOG.info(currentKey);
+                job.populate(result);
+                jobs.add(job);
+            }catch (IllegalArgumentException ioe){
+                StringWriter errors = new StringWriter();
+                ioe.printStackTrace(new PrintWriter(errors));
+                LOG.error(errors.toString());
+            }
+
         }
         return jobs;
     }

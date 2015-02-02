@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.util.Bytes;
  * Created by 1403035 on 2014/11/28.
  */
 public class ExtendConstants extends Constants{
+    //TODO: use control cahr instead of $, !
     public static final char SEP_CHAR2 = '$';
     public static final String SEP2 = "" + SEP_CHAR2;
     public static final byte[] SEP2_BYTES = Bytes.toBytes(SEP2);

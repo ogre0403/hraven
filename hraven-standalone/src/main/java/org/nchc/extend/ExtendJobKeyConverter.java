@@ -4,15 +4,19 @@ import com.twitter.hraven.JobId;
 import com.twitter.hraven.JobKey;
 import com.twitter.hraven.datasource.JobKeyConverter;
 import com.twitter.hraven.util.ByteUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.nchc.extend.ExtendConstants;
+
+import java.io.IOException;
 
 /**
  * Created by 1403035 on 2014/11/28.
  */
 public class ExtendJobKeyConverter extends JobKeyConverter{
-
+   private static final Log LOG = LogFactory.getLog(ExtendJobKeyConverter.class);
    public Put allJobRK(JobKey jobKey){
        // cluster ! user (SOH) JobName
        JobId jid = jobKey.getJobId();
@@ -60,10 +64,12 @@ public class ExtendJobKeyConverter extends JobKeyConverter{
     }
 
 
-    public byte[][] splitTsSortedJobKey(byte[] rawKey) {
+    public byte[][] splitTsSortedJobKey(byte[] rawKey){
         byte[][] outarray = new byte[5][];
         byte[][] splits = ByteUtil.split(rawKey, ExtendConstants.SEP2_BYTES, 2);
+
         byte[][] split2 = ByteUtil.split(splits[0],ExtendConstants.SEP_BYTES,2);
+
         byte[][] split3 = ByteUtil.split(splits[1],ExtendConstants.SEP_BYTES,3);
 
         outarray[0] = split2[0];

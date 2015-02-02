@@ -3,7 +3,7 @@ $(document).ready(function() {
     // share variable
     var CLUSTER = "NCHC";
     var SERVER = "http://192.168.56.201:8080/"
-    var RESTPREFIX = "api/v1/";
+    var RESTPREFIX = "api/jsonp/";
     var dataarray;
 
     // UI
@@ -38,8 +38,7 @@ $(document).ready(function() {
             var user = $("#runningusername").val();
             $.ajax({
                 url: SERVER+RESTPREFIX+"running/job/"+user,
-                type:"GET",
-                dataType:'json',
+                dataType:'jsonp',
                 success: function(json){
                   updateMenu(json, "#runningjoblist");
                 }
@@ -53,8 +52,7 @@ $(document).ready(function() {
             var job = $("#runningjoblist").val();
             $.ajax({
                 url: SERVER+RESTPREFIX+"running/id/"+user+"/"+job,
-                type:"GET",
-                dataType:'json',
+                dataType:'jsonp',
                 success: function(json){
                   updateMenu(json, "#runningidlist");
                 }
@@ -67,8 +65,7 @@ $(document).ready(function() {
             var user = $("#user3").val();
             $.ajax({
                 url: SERVER+RESTPREFIX+"jobList/"+CLUSTER+"/"+user,
-                type:"GET",
-                dataType:'json',
+                dataType:'jsonp',
                 success: function(json){
                   updateMenu(json, "#joblist");
                 }
@@ -82,8 +79,7 @@ $(document).ready(function() {
             var job = $("#joblist").val();
              $.ajax({
                 url: SERVER+RESTPREFIX+"runList/"+CLUSTER+"/"+user+"/"+job,
-                type:"GET",
-                dataType:'json',
+                dataType:'jsonp',
                 success: function(json){
                   updateMenu(json, "#runlist");
                 }
@@ -95,10 +91,8 @@ $(document).ready(function() {
         open: function( event, ui ) {
             var user = $("#jobuser").val();
             $.ajax({
-//                url: "http://192.168.56.201:8080/api/v1/jobList/"+CLUSTER+"/"+user,
                 url: SERVER+RESTPREFIX+"jobList/"+CLUSTER+"/"+user,
-                type:"GET",
-                dataType:'json',
+                dataType:'jsonp',
                 success: function(json){
                     updateMenu(json,"#job");
                 }
@@ -106,57 +100,14 @@ $(document).ready(function() {
         }
     });
 
-    function exec_duration(ms_duration){
-        t = Math.floor(ms_duration/1000);;
-        h=""+(t/36000|0)+(t/3600%10|0);
-        m=""+(t%3600/600|0)+(t%3600/60%10|0);
-        s=""+(t%60/10|0)+(t%60%10);
-        T=h+"時"+m+"分"+s+"秒";
-        return T;
-    }
-
-    function timeConverter(UNIX_timestamp){
-      var a = new Date(UNIX_timestamp);
-      var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-      var year = a.getFullYear();
-      var month = months[a.getMonth()];
-      var date = a.getDate();
-      var hour = a.getHours();
-      var min = a.getMinutes();
-      var sec = a.getSeconds();
-      var time = ''+year+'/'+month+'/'+date+'\n'+hour+':'+min+":"+sec;
-      return time;
-    }
-
-    function convertToTS(HumanTime){
-        // input format from DateTimepicker is mm/dd/yyyy hh:mm
-        // However, Date() ctor is
-        // Date(year, month, day, hours, minutes, seconds, milliseconds);
-        var d = HumanTime.match(/\d+/g); // extract date parts
-        if(d == null)
-            return -1;
-        return +new Date(d[2], d[0] - 1, d[1], d[3], d[4], 0); // build Date object
-    }
-
-
-    function shortStr(orig, len){
-        var sl = orig.length;
-        console.log(sl);
-        if(sl < len)
-            return orig;
-        else
-            return orig.substring(0,len-3)+'...';
-    }
-
     function queryUser(user, start_ts,end_ts){
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
 
         dataarray =[[],[],[],[]]; //clear query result array
 
-        //http://192.168.56.201:8080/api/v1/job/<CLUSTER>/<USER>
-        //$.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user, function(json){
-        $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/?start="+ts1+"&end="+ts2, function(json){
+
+        $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
             for(var k in json) {
                 dataarray[0][k] = shortStr(json[k]['jobName'],13);
                 dataarray[1][k]  =json[k]['cost'];
@@ -179,7 +130,7 @@ $(document).ready(function() {
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
         dataarray =[[],[],[],[]]; //clear query result array
-         $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/"+job+"/?start="+ts1+"&end="+ts2, function(json){
+         $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/"+job+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
              for(var k in json) {
                  dataarray[0][k] = timeConverter(json[k]['submitTime']);
                  dataarray[1][k]  =json[k]['cost'];
@@ -201,8 +152,7 @@ $(document).ready(function() {
     function queryJobDetail(run){
         $.ajax({
             url: SERVER+RESTPREFIX+"job/"+CLUSTER+"/?jobId="+run,
-            type:"GET",
-            dataType:'json',
+            dataType:'jsonp',
             success: function(json){
                 detailTable2(json);
             }
@@ -212,8 +162,7 @@ $(document).ready(function() {
     function queryRunningDetail(run){
         $.ajax({
             url: SERVER+RESTPREFIX+"running/status/"+run,
-            type:"GET",
-            dataType:'json',
+            dataType:'jsonp',
             success: function(json){
                 showRunningStatus(json);
             }
@@ -273,44 +222,6 @@ $(document).ready(function() {
         $("#detailTable table tbody").children().eq(6).children().eq(3).replaceWith("<td>"+json['failedReduces']+"</td>"); // failed reduce
     }
 
-    function plot(Xaxis, Yaxis, showPara){
-        var chart = new Highcharts.Chart({
-            chart: {
-                renderTo: showPara.canvas,
-                defaultSeriesType: 'column',
-                //margin: [50, 150, 60, 80]
-            },
-
-            xAxis: {
-                categories: Xaxis,
-                title: {
-                    text: showPara.xtitle
-                }
-            },
-            yAxis: {
-                title: {
-                    text: showPara.ytitle
-                },
-                plotLines: [{
-                    value: 0,
-                    width: 1,
-                    color: '#808080'
-                }],
-                min: 0
-            },
-            tooltip: {
-                formatter: function() {
-                    return this.x +'<br/>'+ this.y+ showPara.tip;
-                }
-            },
-
-            series: [{
-                name: showPara.series,
-                data: Yaxis,
-                color: '#B22222'
-            }]
-        });
-    }
 
     $("#q4").click(function(){
         var jobid = $("#runningidlist").val();
@@ -408,4 +319,30 @@ $(document).ready(function() {
             plot(dataarray[0],dataarray[3],para);
         }
     );
+
+// JSONP sample
+
+    $("#qtest").click(function(){
+            testjsonp1();
+    });
+
+
+    function testjsonp1(){
+        $.ajax({
+            url: 'http://192.168.56.201:8080/api/jsonp/jsonp3',
+            dataType: 'jsonp',
+            success: function(res){
+                         jsonpCallbackk(res);
+            },
+            error: function(){
+               alert('fail');
+            }
+        });
+    }
+
+    function jsonpCallbackk(data){
+        console.log(data[1]['mapProgress']);
+    }
+
+
 });
