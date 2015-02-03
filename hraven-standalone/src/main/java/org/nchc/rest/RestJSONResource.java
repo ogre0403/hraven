@@ -43,12 +43,13 @@ public class RestJSONResource extends BaseResource{
             @PathParam("jobname") String jobname,
             @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
-            @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
+            @DefaultValue("-1")@QueryParam("end") long end_time,
+            @DefaultValue("10")@QueryParam("size") int size) throws IOException {
         if(start_time < 0 || end_time < 0 || start_time > end_time ) {
             // given incorrect Time interval or time interval not set, return all Job runs
-            return getQueryService().getCertainJobAllRuns(cluster,user,jobname,counter);
+            return getQueryService().getCertainJobAllRuns(cluster,user,jobname,counter,size);
         }
-        return getQueryService().getCertainJobRunsInTimeInterval(cluster,user,jobname,start_time,end_time,counter);
+        return getQueryService().getCertainJobRunsInTimeInterval(cluster,user,jobname,start_time,end_time,counter,size);
     }
 
 
@@ -60,12 +61,13 @@ public class RestJSONResource extends BaseResource{
             @PathParam("user") String user,
             @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
-            @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
+            @DefaultValue("-1")@QueryParam("end") long end_time,
+            @DefaultValue("10")@QueryParam("size") int size) throws IOException {
         if(start_time < 0 || end_time < 0 || start_time > end_time ) {
             // given incorrect Time interval or time interval not set, return all Job runs
-            return getQueryService().getAllJobInTimeInterval(cluster,user,counter);
+            return getQueryService().getAllJobInTimeInterval(cluster,user,counter,size);
         }
-        return getQueryService().getAllJobInTimeInterval(cluster,user,start_time,end_time,counter);
+        return getQueryService().getAllJobInTimeInterval(cluster,user,start_time,end_time,counter,size);
     }
 
     @GET

@@ -69,7 +69,7 @@ public class QueryJobService {
     }
 
     public List<JobDetails> getCertainJobRunsInTimeInterval(String cluster, String user, String jobname,
-            long start_time, long end_time,boolean getCounter) throws IOException {
+            long start_time, long end_time,boolean getCounter,int size) throws IOException {
         LOG.info(cluster + "/"+user+"/"+jobname+"/"+start_time+"/"+end_time);
         byte[] rowPrefix = Bytes.toBytes((cluster + ExtendConstants.SEP + user + ExtendConstants.SEP
                 + jobname + ExtendConstants.SEP));
@@ -85,7 +85,6 @@ public class QueryJobService {
         scan.setStartRow(scanStartRow);
         scan.setStopRow(scanEndRow);
         ResultScanner scanner = historyTable.getScanner(scan);
-
         List<JobDetails> jobs = new LinkedList<JobDetails>();
         for (Result result : scanner) {
             JobKey currentKey = jobKeyConv.fromBytes(result.getRow());
@@ -93,20 +92,23 @@ public class QueryJobService {
             LOG.info(currentKey);
             job.populate(result);
             jobs.add(job);
+            size--;
+            if(size==0) break;
         }
+        scanner.close();
         return jobs;
     }
 
-    public List<JobDetails> getCertainJobAllRuns(String cluster, String user, String jobname,boolean getCounter) throws IOException {
-        return getCertainJobRunsInTimeInterval(cluster, user, jobname, 0, Long.MAX_VALUE,getCounter);
+    public List<JobDetails> getCertainJobAllRuns(String cluster, String user, String jobname,boolean getCounter,int size) throws IOException {
+        return getCertainJobRunsInTimeInterval(cluster, user, jobname, 0, Long.MAX_VALUE,getCounter,size);
     }
 
-    public List<JobDetails> getAllJobInTimeInterval(String cluster, String user,boolean getCounter) throws IOException {
-        return getAllJobInTimeInterval(cluster,user,0,Long.MAX_VALUE, getCounter);
+    public List<JobDetails> getAllJobInTimeInterval(String cluster, String user,boolean getCounter,int size) throws IOException {
+        return getAllJobInTimeInterval(cluster,user,0,Long.MAX_VALUE, getCounter,size);
     }
 
     public List<JobDetails> getAllJobInTimeInterval(String cluster, String user,
-                            long start_time, long end_time,boolean getCounter) throws IOException {
+                            long start_time, long end_time,boolean getCounter,int size) throws IOException {
         LOG.info(cluster + "/"+user+"/"+start_time+"/"+end_time);
         byte[] rowPrefix = Bytes.toBytes((cluster + ExtendConstants.SEP + user + ExtendConstants.SEP2));
 
@@ -124,10 +126,8 @@ public class QueryJobService {
         ResultScanner scanner = historyTable.getScanner(scan);
         List<JobDetails> jobs = new LinkedList<JobDetails>();
         for (Result result : scanner) {
-            byte[] bb = result.getRow();
-            LOG.info(Bytes.toStringBinary(bb));
             try {
-                JobKey currentKey = jobKeyConv.fromTsSortedBytes(bb);
+                JobKey currentKey = jobKeyConv.fromTsSortedBytes(result.getRow());
                 JobDetails job = new JobDetails(currentKey);
                 LOG.info(currentKey);
                 job.populate(result);
@@ -137,8 +137,10 @@ public class QueryJobService {
                 ioe.printStackTrace(new PrintWriter(errors));
                 LOG.error(errors.toString());
             }
-
+            size--;
+            if(size==0) break;
         }
+        scanner.close();
         return jobs;
     }
 
@@ -172,6 +174,7 @@ public class QueryJobService {
             byte[] row = r.getRow();
             nameList.add(Bytes.toString(ByteUtil.split(row, ExtendConstants.SEP3_BYTES)[1]));
         }
+        rs.close();
         return nameList;
     }
 

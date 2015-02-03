@@ -23,8 +23,9 @@ public class JSONPResource extends RestJSONResource{
             @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time,
+            @DefaultValue("10")@QueryParam("size") int size,
             @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobByTimeInterval(cluster,user,jobname,counter,start_time,end_time),callback);
+        return new JSONWithPadding(getJobByTimeInterval(cluster,user,jobname,counter,start_time,end_time,size),callback);
     }
 
     @GET
@@ -36,8 +37,9 @@ public class JSONPResource extends RestJSONResource{
             @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time,
+            @DefaultValue("10")@QueryParam("size") int size,
             @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobByTimeInterval(cluster,user,counter,start_time,end_time),callback);
+        return new JSONWithPadding(getJobByTimeInterval(cluster,user,counter,start_time,end_time,size),callback);
     }
 
 

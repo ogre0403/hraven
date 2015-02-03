@@ -64,19 +64,27 @@ public class ExtendJobKeyConverter extends JobKeyConverter{
     }
 
 
+    //cluster!user $ runid!jobname!job_epoch job_seq
+    /**
+     * Since the long encoding of the run ID may legitimately contain the
+     * separator bytes, we first split the leading elements (cluster!user)
+     * and remaonder (runid!jobname!job_epoch job_seq) by dollar sign ($).
+     * Then split out the runId, jobname, job_epoch, job_seq by encoded long length.
+     */
     public byte[][] splitTsSortedJobKey(byte[] rawKey){
         byte[][] outarray = new byte[5][];
         byte[][] splits = ByteUtil.split(rawKey, ExtendConstants.SEP2_BYTES, 2);
+        byte[][] prefix = ByteUtil.split(splits[0],ExtendConstants.SEP_BYTES,2);
 
-        byte[][] split2 = ByteUtil.split(splits[0],ExtendConstants.SEP_BYTES,2);
+        byte[] remainder = splits[1];
 
-        byte[][] split3 = ByteUtil.split(splits[1],ExtendConstants.SEP_BYTES,3);
-
-        outarray[0] = split2[0];
-        outarray[1] = split2[1];
-        outarray[2] = split3[1];
-        outarray[3] = split3[0];
-        outarray[4] = split3[2];
+        for (int i=0; i < 1; i++) {
+            outarray[i] = prefix[i];
+        }
+        outarray[3] = ByteUtil.safeCopy(remainder, 0, 8);
+        outarray[4] = ByteUtil.safeCopy(remainder, remainder.length-16, 16);
+        int len = remainder.length - 8-8-8-1-1;
+        outarray[2] = ByteUtil.safeCopy(remainder, 9, len);
 
         return outarray;
     }
