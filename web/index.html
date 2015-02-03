@@ -41,13 +41,11 @@
 
 		<div class="right">
 			<div id="typeToggle">
-				<input type="radio" id="btncost" name="radio" checked="checked"/><label for="btncost">Cost</label>
-				<input type="radio" id="btntime" name="radio" /><label for="btntime">Run Time</label>
-				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">MbMillis</label>
+				<input type="radio" id="btntime" name="radio" checked="checked"/><label for="btntime">Run Time</label>
+				<input type="radio" id="btnmbms" name="radio" /><label for="btnmbms">SU</label>
 			</div>
 			<div id="container1" class="plot_container"></div>
 		</div>
-		<!--<div id="container1" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>-->
 
 		<div class="clear"></div>
 	</div>
@@ -68,14 +66,12 @@
 		</div>
 		<div class="right">
 			<div id="typeToggle2">
-				<input type="radio" id="btncost1" name="radio" checked="checked"/><label for="btncost1">Cost</label>
-				<input type="radio" id="btntime1" name="radio" /><label for="btntime1">Run Time</label>
-				<input type="radio" id="btnmbms1" name="radio" /><label for="btnmbms1">MbMillis</label>
+				<input type="radio" id="btntime1" name="radio1" checked="checked"/><label for="btntime1">Run Time</label>
+				<input type="radio" id="btnmbms1" name="radio1" /><label for="btnmbms1">SU</label>
 				<div id="container2" class="plot_container"></div>
 			</div>
 		</div>
 		<div class="clear"></div>
-		<!--<div class= "plot_container" id="container2" style="width: 70%; height: 400px; margin: 0 auto;margin-top: 80px"></div>-->
 	</div>
 
 	<div id="jobdetail">
@@ -105,7 +101,7 @@
 					<th>SubmitTime</th><td> </td><th>FinishTime</th><td> </td>
 				</tr>
 				<tr>
-					<th>RunTime</th><td> </td><th>Cost</th><td> </td>
+					<th>RunTime</th><td> </td><th>SU(cores*hours)</th><td> </td>
 				</tr>
 				<tr>
 					<th>Total Maps</th><td> </td><th>Total Reduces</th>	<td> </td>

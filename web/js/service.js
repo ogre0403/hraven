@@ -104,22 +104,20 @@ $(document).ready(function() {
         var ts1 = convertToTS(start_ts);
         var ts2 = convertToTS(end_ts);
 
-        dataarray =[[],[],[],[]]; //clear query result array
-
+        dataarray =[[],[],[]]; //clear query result array
 
         $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
             for(var k in json) {
                 dataarray[0][k] = shortStr(json[k]['jobName'],13);
-                dataarray[1][k]  =json[k]['cost'];
-                dataarray[2][k] =json[k]['runTime'];
-                dataarray[3][k]  = json[k]['megabyteMillis'];
+                dataarray[1][k]  = Math.round(json[k]['runTime']/1000);
+                dataarray[2][k]  = Math.round(json[k]['megabyteMillis']/(10*60*60))/100;
             }
 
             var para = {
                 xtitle: "Job Name",
-                ytitle: "COST (NTD)",
-                series: "COST",
-                tip: " NTD.",
+                ytitle: "Time (sec.)",
+                series: "runTime",
+                tip: " sec.",
                 canvas: "container1"
             };
             plot(dataarray[0],dataarray[1],para);
@@ -132,17 +130,16 @@ $(document).ready(function() {
         dataarray =[[],[],[],[]]; //clear query result array
          $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/"+job+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
              for(var k in json) {
-                 dataarray[0][k] = timeConverter(json[k]['submitTime']);
-                 dataarray[1][k]  =json[k]['cost'];
-                 dataarray[2][k] =json[k]['runTime'];
-                 dataarray[3][k]  = json[k]['megabyteMillis'];
+                 dataarray[0][k]  = timeConverter(json[k]['submitTime']);
+                 dataarray[1][k]  = Math.round(json[k]['runTime']/1000);
+                 dataarray[2][k]  = Math.round(json[k]['megabyteMillis']/(10*60*60))/100;
              }
 
              var para = {
-                 xtitle: "submitTime",
-                 ytitle: "COST (NTD)",
-                 series: "COST",
-                 tip: " NTD.",
+                xtitle: "Job Name",
+                ytitle: "Time (sec.)",
+                series: "runTime",
+                tip: " sec.",
                  canvas: "container2"
              };
              plot(dataarray[0],dataarray[1],para);
@@ -201,7 +198,11 @@ $(document).ready(function() {
     }
 
     function detailTable2(json){
-        cost = Math.round(json['cost']*100)/100;
+        // value of megabyteMillis is equal to cores*millis
+        // normalized to NCHC SU(cores * hours) by dividing 1000*60*60
+        // in order to accurate to the second decimal place,
+        // round(su/(10*60*60))/100
+        SU = Math.round(json['megabyteMillis']/(10*60*60))/100;
         run_time = exec_duration(json['runTime']);
         submitTime = timeConverter(json['submitTime']);
         finishTime = timeConverter(json['finishTime']);
@@ -213,7 +214,7 @@ $(document).ready(function() {
         $("#detailTable table tbody").children().eq(2).children().eq(1).replaceWith("<td>"+submitTime+"</td>"); // submit time
         $("#detailTable table tbody").children().eq(2).children().eq(3).replaceWith("<td>"+finishTime+"</td>"); // finish time
         $("#detailTable table tbody").children().eq(3).children().eq(1).replaceWith("<td>"+run_time+"</td>"); // run time
-        $("#detailTable table tbody").children().eq(3).children().eq(3).replaceWith("<td>"+cost+"</td>"); // cost
+        $("#detailTable table tbody").children().eq(3).children().eq(3).replaceWith("<td>"+SU+"</td>"); // cost
         $("#detailTable table tbody").children().eq(4).children().eq(1).replaceWith("<td>"+json['totalMaps']+"</td>"); // total map
         $("#detailTable table tbody").children().eq(4).children().eq(3).replaceWith("<td>"+json['totalReduces']+"</td>"); // total reduce
         $("#detailTable table tbody").children().eq(5).children().eq(1).replaceWith("<td>"+json['finishedMaps']+"</td>"); // finish map
@@ -250,73 +251,49 @@ $(document).ready(function() {
          queryJobDetail(v3);
      });
 
-    $("#btncost").click(function () {
-            var para = {
-                xtitle: "Job Name",
-                ytitle: "COST (NTD)",
-                series: "COST",
-                tip: " NTD.",
-                canvas: "container1"
-            };
-            plot(dataarray[0],dataarray[1],para);
-        }
-    );
-
-    $("#btncost1").click(function () {
-            var para = {
-                xtitle: "submitTime",
-                ytitle: "COST (NTD)",
-                series: "COST",
-                tip: " NTD.",
-                canvas: "container2"
-            };
-            plot(dataarray[0],dataarray[1],para);
-        }
-    );
-
     $("#btntime").click(function () {
             var para = {
                 xtitle: "Job Name",
-                ytitle: "Time (ms)",
+                ytitle: "Time (sec.)",
                 series: "runTime",
                 tip: " sec.",
                 canvas: "container1"
             };
-            plot(dataarray[0],dataarray[2],para);
+            plot(dataarray[0],dataarray[1],para);
         }
     );
     $("#btntime1").click(function () {
             var para = {
                 xtitle: "submitTime",
-                ytitle: "Time (ms)",
+                ytitle: "Time (sec.)",
                 series: "runTime",
                 tip: " sec.",
                 canvas: "container2"
             };
-            plot(dataarray[0],dataarray[2],para);
+            plot(dataarray[0],dataarray[1],para);
         }
     );
     $("#btnmbms").click(function () {
             var para = {
                 xtitle: "Job Name",
-                ytitle: "RAM X TIME <br> (megabyteMillis)",
-                series: "megabyteMillis",
-                tip: " MBSec.",
+                ytitle: "SU (cores-hours)",
+                series: "SU",
+                tip: " SU",
                 canvas: "container1"
             };
-            plot(dataarray[0],dataarray[3],para);
+            plot(dataarray[0],dataarray[2],para);
         }
     );
 
     $("#btnmbms1").click(function () {
             var para = {
                 xtitle: "submitTime",
-                ytitle: "RAM X TIME <br> (megabyteMillis)",
-                series: "megabyteMillis",
-                tip: " MBSec.",
+                ytitle: "SU (cores-hours)",
+                series: "SU",
+                tip: " SU",
                 canvas: "container2"
             };
-            plot(dataarray[0],dataarray[3],para);
+            plot(dataarray[0],dataarray[2],para);
         }
     );
 
