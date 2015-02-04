@@ -43,8 +43,7 @@ function plot(Xaxis, Yaxis, showPara){
     var chart = new Highcharts.Chart({
         chart: {
             renderTo: showPara.canvas,
-            defaultSeriesType: 'column',
-            //margin: [50, 150, 60, 80]
+            defaultSeriesType: 'bar',
         },
 
         xAxis: {
@@ -74,6 +73,16 @@ function plot(Xaxis, Yaxis, showPara){
             name: showPara.series,
             data: Yaxis,
             color: '#B22222'
-        }]
+        }],
+
+        title: {
+            text: ' '
+        },
+
+        plotOptions: {
+            bar: {
+                pointWidth: 20
+            }
+        },
     });
 }

@@ -368,6 +368,7 @@
                     qualifiedJobId = rawService.getQualifiedJobIdFromResult(result);
                     jobConf = rawService.createConfigurationFromResult(result);
                     jobhistoryraw = rawService.getJobHistoryRawFromResult(result);
+                    //TODO: use finish time instead of submit time
                     long submitTimeMillis = JobHistoryFileParserBase.getSubmitTimeMillisFromJobHistory(jobhistoryraw);
 
                     if (submitTimeMillis == 0L) {

@@ -52,7 +52,15 @@ width: 238px;
     height: 400px;
     margin: 0 auto;
     */
-    margin-left: 80px;
+
+   /* margin-left: 80px;*/
+   height: 500px;
+/*
+   min-width: 310px;
+   max-width: 1000px;
+
+   margin: 0 auto;
+   */
 }
 
 

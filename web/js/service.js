@@ -108,7 +108,7 @@ $(document).ready(function() {
 
         $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
             for(var k in json) {
-                dataarray[0][k] = shortStr(json[k]['jobName'],13);
+                dataarray[0][k] = shortStr(json[k]['jobName'],20);
                 dataarray[1][k]  = Math.round(json[k]['runTime']/1000);
                 dataarray[2][k]  = Math.round(json[k]['megabyteMillis']/(10*60*60))/100;
             }
@@ -136,7 +136,7 @@ $(document).ready(function() {
              }
 
              var para = {
-                xtitle: "Job Name",
+                xtitle: "submit Time",
                 ytitle: "Time (sec.)",
                 series: "runTime",
                 tip: " sec.",
@@ -264,7 +264,7 @@ $(document).ready(function() {
     );
     $("#btntime1").click(function () {
             var para = {
-                xtitle: "submitTime",
+                xtitle: "submit Time",
                 ytitle: "Time (sec.)",
                 series: "runTime",
                 tip: " sec.",
@@ -287,7 +287,7 @@ $(document).ready(function() {
 
     $("#btnmbms1").click(function () {
             var para = {
-                xtitle: "submitTime",
+                xtitle: "submit Time",
                 ytitle: "SU (cores-hours)",
                 series: "SU",
                 tip: " SU",
