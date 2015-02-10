@@ -369,47 +369,56 @@
                     jobConf = rawService.createConfigurationFromResult(result);
                     jobhistoryraw = rawService.getJobHistoryRawFromResult(result);
                     //TODO: use finish time instead of submit time
+                    // 1. query completed job with user name and job FINISHED time
+                    // 2. query completed job with user name, SUBMIT time, and job name
                     long submitTimeMillis = JobHistoryFileParserBase.getSubmitTimeMillisFromJobHistory(jobhistoryraw);
-
                     if (submitTimeMillis == 0L) {
                         LOG.info("NOTE: Since submitTimeMillis from job history is 0, now attempting to "
                                 + "approximate job start time based on last modification time from the raw table");
                         submitTimeMillis = rawService.getApproxSubmitTime(result);
                     }
-                    Put submitTimePut = rawService.getJobSubmitTimePut(result.getRow(), submitTimeMillis);
 
-                    rawTable.put(submitTimePut);
+                    long finishTimeMillis = ExtendJobHistoryFileParserHadoop2.getFinishTimeMillisFromJobHistory(jobhistoryraw);
+                    if (finishTimeMillis == 0L) {
+                        finishTimeMillis = rawService.getApproxFinishTime(result);
+                        LOG.info("NOTE: Since finishTimeMillis from job history is 0, now approximate job finish time to "
+                                +finishTimeMillis+ " based on last modification time from the raw table");
 
-                    JobDesc jobDesc = JobDescFactory.createJobDesc(qualifiedJobId, submitTimeMillis, jobConf);
-                    JobKey jobKey = new JobKey(jobDesc);
+                    }
+                    Put finishTimePut = rawService.getJobFinishTimePut(result.getRow(), finishTimeMillis);
+                    rawTable.put(finishTimePut);
 
-                    LOG.info("JobDesc (" + keyCount + "): " + jobDesc + " submitTimeMillis: " + submitTimeMillis);
+                    // use finishTime to create JobDesc insteads of startTime
+                    JobDesc jobDesc_w_finishT = JobDescFactory.createJobDesc(qualifiedJobId, finishTimeMillis, jobConf);
+                    JobKey jobKey_w_finishT = new JobKey(jobDesc_w_finishT);
+                    LOG.info("JobDesc with finish time (" + keyCount + "): " + jobDesc_w_finishT + " finishTimeMillis: " + finishTimeMillis);
 
-                    List<Put> puts = ExtendJobHistoryService.getHbasePuts(jobDesc, jobConf);
+                    //user job sorted by submit time
+                    JobDesc jobDesc_w_submitT = JobDescFactory.createJobDesc(qualifiedJobId, submitTimeMillis, jobConf);
+                    JobKey jobKey_w_submitT = new JobKey(jobDesc_w_submitT);
+                    LOG.info("JobDesc with submit time (" + keyCount + "): " + jobDesc_w_submitT + " submitTimeMillis: " + submitTimeMillis);
+
+                    List<Put> puts = ExtendJobHistoryService.getHbasePuts(jobDesc_w_submitT,jobDesc_w_finishT , jobConf);
                     LOG.info("Writing " + puts.size() + " JobConf puts to "  + Constants.HISTORY_TABLE);
                     jobputs.addAll(puts);
 
                     LOG.info("Writing secondary indexes");
-                    jobHistoryByIdService.writeIndexes(jobKey);
-                    //appVersionService.addVersion(jobDesc.getCluster(), jobDesc.getUserName(),
-                    //        jobDesc.getAppId(), jobDesc.getVersion(), jobDesc.getRunId());
+                    jobHistoryByIdService.writeIndexes(jobKey_w_submitT);
 
                     KeyValue keyValue = result.getColumnLatest(Constants.RAW_FAM_BYTES,  Constants.JOBHISTORY_COL_BYTES);
-
-
                     if (keyValue == null) {
                         throw new MissingColumnInResultException(Constants.RAW_FAM_BYTES,
                                 Constants.JOBHISTORY_COL_BYTES);
                     } else {
                         historyFileContents = keyValue.getValue();
                     }
-                    JobHistoryFileParser historyFileParser = new ExtendJobHistoryFileParserHadoop2(jobConf);
-                            //JobHistoryFileParserFactory.createJobHistoryFileParser(historyFileContents, jobConf);
-                    historyFileParser.parse(historyFileContents, jobKey);
+
+                    ExtendJobHistoryFileParserHadoop2 historyFileParser = new ExtendJobHistoryFileParserHadoop2(jobConf);
+                    historyFileParser.parse(historyFileContents, jobKey_w_submitT, jobKey_w_finishT);
 
                     puts = historyFileParser.getJobPuts();
                     if (puts == null) {
-                        throw new ProcessingException(" Unable to get job puts for this record!" + jobKey);
+                        throw new ProcessingException(" Unable to get job puts for this record!" + jobKey_w_finishT);
                     } else{
                         LOG.info("Writing " + puts.size() + " Job puts to "  + Constants.HISTORY_TABLE);
                         jobputs.addAll(puts);
@@ -417,40 +426,31 @@
 
                     puts = historyFileParser.getTaskPuts();
                     if (puts == null) {
-                        throw new ProcessingException(" Unable to get task puts for this record!" + jobKey);
+                        throw new ProcessingException(" Unable to get task puts for this record!" + jobKey_w_finishT);
                     }else {
                         LOG.info("Writing " + puts.size() + " task puts to " + Constants.HISTORY_TASK_TABLE);
                         taskputs.addAll(puts);
                     }
 
-                    // nchc su function is most equivalent to MegaByteMill
+                    // Usage of NCHC SU is most equivalent to MegaByteMill
                     // I DO NOT change the variable from MegaByteMillis to SU
                     // just modify the web UI display name
-                    Long su = ((ExtendJobHistoryFileParserHadoop2)historyFileParser).
-                            getSU(Long.parseLong(this.prop.getProperty("CPC","1")));
-                    LOG.debug(jobKey.getJobId() +" SU = " + su);
+                    Long su = historyFileParser.getSU(Long.parseLong(this.prop.getProperty("CPC", "1")));
+                    LOG.debug(jobKey_w_finishT.getJobId() +" SU = " + su);
 
-
-                    /** post processing steps on job puts and job conf puts
-                    Long mbMillis = historyFileParser.getMegaByteMillis();
-                    if (mbMillis == null) {
-                        throw new ProcessingException(" Unable to get megabyte millis calculation for this record!" + jobKey);
-                    }
-                     */
-                    List<Put> mbPut = PutUtil.getMegaByteMillisPut(su, jobKey);
+                    List<Put> mbPut = PutUtil.getMegaByteMillisPut(su, jobKey_w_submitT,jobKey_w_finishT);
                     LOG.info("Writing SU puts to " + Constants.HISTORY_TABLE);
                     jobputs.addAll(mbPut);
 
 
-                    /** post processing steps to get cost of the job */
-//                    Double jobCost = PutUtil.getJobCost(su, macType, this.prop);
+                    // post processing steps to get cost of the job
                     Double jobCost = PutUtil.getJobCost(su, Double.parseDouble(this.prop.getProperty("SU", "1.7")));
-                    LOG.debug(jobKey.getJobId() +" cost = " + jobCost);
+                    LOG.debug(jobKey_w_finishT.getJobId() +" cost = " + jobCost);
                     if (jobCost == null) {
                         throw new ProcessingException(" Unable to get job cost calculation for this record!"
-                                + jobKey);
+                                + jobKey_w_finishT);
                     }
-                    List<Put> jobCostPut = PutUtil.getJobCostPut(jobCost, jobKey);
+                    List<Put> jobCostPut = PutUtil.getJobCostPut(jobCost, jobKey_w_submitT, jobKey_w_finishT);
                     LOG.info("Writing jobCost puts to " + Constants.HISTORY_TABLE);
                     jobputs.addAll(jobCostPut);
 

@@ -26,24 +26,24 @@ public class PutUtil {
     private static ExtendJobKeyConverter jobKeyConv = new ExtendJobKeyConverter();
     private static Log LOG = LogFactory.getLog(PutUtil.class);
 
-    public static List<Put> getJobCostPut(Double jobCost, JobKey jobKey) {
+    public static List<Put> getJobCostPut(Double jobCost, JobKey jobKey_w_submitT, JobKey jobKey_w_finishT) {
 
         List<Put> ps = new LinkedList<Put>();
-        Put pJobCost = new Put(jobKeyConv.toBytes(jobKey));
+        Put pJobCost = new Put(jobKeyConv.toBytes(jobKey_w_submitT));
         pJobCost.add(Constants.INFO_FAM_BYTES, Constants.JOBCOST_BYTES, Bytes.toBytes(jobCost));
         ps.add(pJobCost);
-        pJobCost = new Put(jobKeyConv.toBytesSortByTS(jobKey));
+        pJobCost = new Put(jobKeyConv.toBytesSortByTS(jobKey_w_finishT));
         pJobCost.add(Constants.INFO_FAM_BYTES, Constants.JOBCOST_BYTES, Bytes.toBytes(jobCost));
         ps.add(pJobCost);
         return ps;
     }
 
-    public static List<Put> getMegaByteMillisPut(Long mbMillis, JobKey jobKey) {
+    public static List<Put> getMegaByteMillisPut(Long mbMillis, JobKey jobKey_w_submitT, JobKey jobKey_w_finishT) {
         List<Put> ps = new LinkedList<Put>();
-        Put pMb = new Put(jobKeyConv.toBytes(jobKey));
+        Put pMb = new Put(jobKeyConv.toBytes(jobKey_w_submitT));
         pMb.add(Constants.INFO_FAM_BYTES, Constants.MEGABYTEMILLIS_BYTES, Bytes.toBytes(mbMillis));
         ps.add(pMb);
-        pMb = new Put(jobKeyConv.toBytesSortByTS(jobKey));
+        pMb = new Put(jobKeyConv.toBytesSortByTS(jobKey_w_finishT));
         pMb.add(Constants.INFO_FAM_BYTES, Constants.MEGABYTEMILLIS_BYTES, Bytes.toBytes(mbMillis));
         ps.add(pMb);
         return ps;

@@ -88,6 +88,7 @@ public class QueryJobService {
         List<JobDetails> jobs = new LinkedList<JobDetails>();
         for (Result result : scanner) {
             JobKey currentKey = jobKeyConv.fromBytes(result.getRow());
+//            JobKey currentKey = jobKeyConv.fromTsSortedBytes(result.getRow());
             JobDetails job = new JobDetails(currentKey);
             LOG.info(currentKey);
             job.populate(result);
@@ -128,6 +129,7 @@ public class QueryJobService {
         for (Result result : scanner) {
             try {
                 JobKey currentKey = jobKeyConv.fromTsSortedBytes(result.getRow());
+//                JobKey currentKey = jobKeyConv.fromBytes(result.getRow());
                 JobDetails job = new JobDetails(currentKey);
                 LOG.info(currentKey);
                 job.populate(result);
@@ -243,6 +245,7 @@ public class QueryJobService {
         try {
             response = httpClient.execute(getRequest);
         }catch (IOException ioe){
+            httpClient.getConnectionManager().shutdown();
             return null;
         }
 
@@ -255,6 +258,7 @@ public class QueryJobService {
         try {
             ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
         }catch (IOException ioe){
+            httpClient.getConnectionManager().shutdown();
             return null;
         }
 

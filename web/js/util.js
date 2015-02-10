@@ -7,16 +7,22 @@ function exec_duration(ms_duration){
     return T;
 }
 
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
 function timeConverter(UNIX_timestamp){
     var a = new Date(UNIX_timestamp);
     var months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
     var year = a.getFullYear();
     var month = months[a.getMonth()];
-    var date = a.getDate();
-    var hour = a.getHours();
-    var min = a.getMinutes();
-    var sec = a.getSeconds();
-    var time = ''+year+'/'+month+'/'+date+'\n'+hour+':'+min+":"+sec;
+    var date = pad(a.getDate(),2);
+    var hour = pad(a.getHours(),2);
+    var min = pad(a.getMinutes(),2);
+    var sec = pad(a.getSeconds(),2);
+    var time = ''+year+'/'+month+'/'+date+'<br/>'+hour+':'+min+":"+sec;
     return time;
 }
 

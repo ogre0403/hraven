@@ -26,29 +26,30 @@ public class ExtendJobHistoryService extends JobHistoryService {
     }
 
 
-    public static List<Put> getHbasePuts(JobDesc jobDesc, Configuration jobConf) {
+    public static List<Put> getHbasePuts(JobDesc jobDesc_w_submitT, JobDesc jobDesc_w_finishT, Configuration jobConf) {
         List<Put> puts = new LinkedList<Put>();
         ExtendJobKeyConverter jkcvrt = new ExtendJobKeyConverter();
 
-        JobKey jobKey = new JobKey(jobDesc);
+        JobKey jobKey = new JobKey(jobDesc_w_submitT);
+        JobKey jobKeyTS = new JobKey(jobDesc_w_finishT);
         Put pp = jkcvrt.allJobRK(jobKey);
         puts.add(pp);
 
         byte[] jobKeyBytes = jkcvrt.toBytes(jobKey);
-        byte[] jkByTS = jkcvrt.toBytesSortByTS(jobKey);
+        byte[] jkByTS = jkcvrt.toBytesSortByTS(jobKeyTS);
 
         // Add all columns to one put
         Put jobPut = new Put(jobKeyBytes);
         jobPut.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.VERSION_COLUMN_BYTES,
-                Bytes.toBytes(jobDesc.getVersion()));
+                Bytes.toBytes(jobDesc_w_submitT.getVersion()));
         jobPut.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.FRAMEWORK_COLUMN_BYTES,
-                Bytes.toBytes(jobDesc.getFramework().toString()));
+                Bytes.toBytes(jobDesc_w_submitT.getFramework().toString()));
 
         Put jobputbyTS = new Put(jkByTS);
         jobputbyTS.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.VERSION_COLUMN_BYTES,
-                Bytes.toBytes(jobDesc.getVersion()));
+                Bytes.toBytes(jobDesc_w_finishT.getVersion()));
         jobputbyTS.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.FRAMEWORK_COLUMN_BYTES,
-                Bytes.toBytes(jobDesc.getFramework().toString()));
+                Bytes.toBytes(jobDesc_w_finishT.getFramework().toString()));
 
         // Avoid doing string to byte conversion inside loop.
         byte[] jobConfColumnPrefix = Bytes.toBytes(ExtendConstants.JOB_CONF_COLUMN_PREFIX
@@ -67,7 +68,7 @@ public class ExtendJobHistoryService extends JobHistoryService {
 
         // ensure pool/queuename is set correctly
         setHravenQueueNamePut(jobConf, jobPut, jobKey, jobConfColumnPrefix);
-        setHravenQueueNamePut(jobConf, jobputbyTS, jobKey, jobConfColumnPrefix);
+        setHravenQueueNamePut(jobConf, jobputbyTS, jobKeyTS, jobConfColumnPrefix);
 
         puts.add(jobPut);
         puts.add(jobputbyTS);

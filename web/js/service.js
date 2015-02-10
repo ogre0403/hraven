@@ -107,6 +107,9 @@ $(document).ready(function() {
         dataarray =[[],[],[]]; //clear query result array
 
         $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
+            if(json.length == 0)
+                alert("No Matched Result")
+
             for(var k in json) {
                 dataarray[0][k] = shortStr(json[k]['jobName'],20);
                 dataarray[1][k]  = Math.round(json[k]['runTime']/1000);
@@ -129,6 +132,10 @@ $(document).ready(function() {
         var ts2 = convertToTS(end_ts);
         dataarray =[[],[],[],[]]; //clear query result array
          $.getJSON(SERVER+RESTPREFIX+"job/"+CLUSTER+"/"+user+"/"+job+"/?start="+ts1+"&end="+ts2+"&callback=?", function(json){
+
+             if(json.length == 0)
+                alert("No Matched Result")
+
              for(var k in json) {
                  dataarray[0][k]  = timeConverter(json[k]['submitTime']);
                  dataarray[1][k]  = Math.round(json[k]['runTime']/1000);

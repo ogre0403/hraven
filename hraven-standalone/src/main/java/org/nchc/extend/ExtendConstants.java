@@ -37,4 +37,19 @@ public class ExtendConstants extends Constants{
     public static final String MAP_ATTEMPT_TYPE       = "m";
     public static final String REDUCE_ATTEMPT_TYPE    = "r";
     public static final String OTHER_ATTEMPT_TYPE     = "o";
+
+    public static final String FINISH_TIME_COL = "finish_time";
+    public static final byte[] FINISH_TIME_COL_BYTES = Bytes.toBytes(FINISH_TIME_COL);
+
+    public static final String JOB_FINISHED_EVENT = "{\"type\":\"JOB_FINISHED";
+    public static final byte[] JOB_FINISHED_EVENT_BYTES = Bytes.toBytes(JOB_FINISHED_EVENT);
+
+    public static final String JOB_KILLED_EVENT = "{\"type\":\"JOB_KILLED";
+    public static final byte[] JOB_KILLED_EVENT_BYTES = Bytes.toBytes(JOB_KILLED_EVENT);
+
+    public static final String JOB_FAILED_EVENT = "{\"type\":\"JOB_FAILED";
+    public static final byte[] JOB_FAILED_EVENT_BYTES = Bytes.toBytes(JOB_FAILED_EVENT);
+
+    public static final String FINISHED_TIME_PREFIX_HADOOP2 = "\"finishTime\":";
+    public static final byte[] FINISHED_TIME_PREFIX_HADOOP2_BYTES = Bytes.toBytes(FINISHED_TIME_PREFIX_HADOOP2);
 }

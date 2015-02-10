@@ -4,15 +4,13 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 
-import com.twitter.hraven.JobDetails;
-import com.twitter.hraven.JobHistoryKeys;
-import com.twitter.hraven.JobKey;
-import com.twitter.hraven.TaskKey;
+import com.twitter.hraven.*;
 import com.twitter.hraven.datasource.ProcessingException;
 import com.twitter.hraven.datasource.TaskKeyConverter;
 import com.twitter.hraven.etl.JobHistoryFileParserBase;
 import com.twitter.hraven.etl.JobHistoryFileParserFactory;
 import com.twitter.hraven.util.ByteArrayWrapper;
+import com.twitter.hraven.util.ByteUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
@@ -205,6 +203,15 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         super(conf);
     }
 
+    public void parse(byte[] historyFileContents, JobKey jobKey_w_submitT, JobKey jobKey_w_finishT)
+            throws ProcessingException {
+        this.jobKeyByTS = jobKeyConv.toBytesSortByTS(jobKey_w_finishT);
+        parse(historyFileContents,jobKey_w_submitT);
+    }
+
+
+
+
     /**
      * {@inheritDoc}
      */
@@ -214,7 +221,6 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
 
         this.jobKey = jobKey;
         this.jobKeyBytes = jobKeyConv.toBytes(jobKey);
-        this.jobKeyByTS = jobKeyConv.toBytesSortByTS(jobKey);
         setJobId(jobKey.getJobId().getJobIdString());
         mapAttemptMap.clear();
         reduceAttemptMap.clear();
@@ -995,6 +1001,52 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
             total = total + cpc * interval;
         }
         return total;
+    }
+
+
+    public static long getFinishTimeMillisFromJobHistory(byte[] jobHistoryRaw) {
+        long finishTimeMillis = 0;
+        if (null == jobHistoryRaw) {
+            return finishTimeMillis;
+        }
+
+        HadoopVersion hv = JobHistoryFileParserFactory.getVersion(jobHistoryRaw);
+        switch (hv) {
+            case TWO:
+                // three cases (JOB_FINISHED, JOB_KILLED, JOB_FAILED) result in finishTime,
+                int startIndex = -1;
+                if(startIndex == -1)  // check JOB_FINISHED
+                    startIndex = ByteUtil.indexOf(jobHistoryRaw, ExtendConstants.JOB_FINISHED_EVENT_BYTES, 0);
+                if(startIndex == -1) // check JOB_KILLED
+                    startIndex = ByteUtil.indexOf(jobHistoryRaw, ExtendConstants.JOB_KILLED_EVENT_BYTES, 0);
+                if(startIndex == -1) // check JOB_FAILED
+                    startIndex = ByteUtil.indexOf(jobHistoryRaw, ExtendConstants.JOB_FAILED_EVENT_BYTES, 0);
+
+                if (startIndex != -1) {
+                    // now look for the submit time in this event
+                    int secondQuoteIndex =
+                            ByteUtil.indexOf(jobHistoryRaw, ExtendConstants.FINISHED_TIME_PREFIX_HADOOP2_BYTES, startIndex);
+                    if (secondQuoteIndex != -1) {
+                        // read the string that contains the unix timestamp
+                        String finishTimeMillisString = Bytes.toString(jobHistoryRaw,
+                                secondQuoteIndex + Constants.EPOCH_TIMESTAMP_STRING_LENGTH,
+                                Constants.EPOCH_TIMESTAMP_STRING_LENGTH);
+                        try {
+                            finishTimeMillis = Long.parseLong(finishTimeMillisString);
+                        } catch (NumberFormatException nfe) {
+                            LOG.error(" caught NFE during conversion of submit time " + finishTimeMillisString + " " + nfe.getMessage());
+                            finishTimeMillis = 0;
+                        }
+                    }
+                }
+                break;
+
+            case ONE:
+            default:
+                LOG.error("fetch Job finish time from history is not supported in hadoop version 1");
+                break;
+        }
+        return finishTimeMillis;
     }
 
     private class DurationPair{
