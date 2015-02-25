@@ -2,7 +2,7 @@ $(document).ready(function() {
 
     // share variable
     var CLUSTER = "NCHC";
-    var SERVER = "http://192.168.56.201:8080/"
+    var SERVER = "https://192.168.56.201:8443/"
     var RESTPREFIX = "api/jsonp/";
     var dataarray;
 

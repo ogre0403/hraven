@@ -26,11 +26,14 @@ import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ContextHandlerCollection;
 import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.thread.QueuedThreadPool;
 
+import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -43,6 +46,7 @@ import java.util.Properties;
  */
 public class RestServer extends AbstractIdleService {
   private static final int DEFAULT_PORT = 8080;
+  private static final int DEFAULT_SSL_PORT = 443;
   private static final String DEFAULT_ADDRESS = "0.0.0.0";
   private static final String WEBROOT_INDEX = "web";
 
@@ -50,19 +54,23 @@ public class RestServer extends AbstractIdleService {
 
   private final String address;
   private final int port;
+  private final int sslport;
   private Server server;
 
-  public RestServer(String address, int port) {
+  public RestServer(String address, int port,int sslport) {
     this.address = address;
     this.port = port;
+    this.sslport = sslport;
   }
 
   public RestServer(Properties ps){
       this.address = DEFAULT_ADDRESS;
-      int port = Integer.parseInt(ps.getProperty("rest.port"));
+      int port = Integer.parseInt(ps.getProperty("rest.port", DEFAULT_PORT+""));
+      int sslport = Integer.parseInt(ps.getProperty("rest.ssl.port",DEFAULT_SSL_PORT+""));
       LOG.info("rest.port: " + port);
+      LOG.info("rest.ssl.port: " + sslport);
       this.port = port;
-
+      this.sslport = sslport;
   }
     @Override
     protected void startUp() throws Exception {
@@ -76,10 +84,20 @@ public class RestServer extends AbstractIdleService {
         server.setStopAtShutdown(true);
 
         // set ip and port
-        Connector connector = new SelectChannelConnector();
-        connector.setPort(this.port);
-        connector.setHost(address);
-        server.addConnector(connector);
+        Connector http_connector = new SelectChannelConnector();
+        http_connector.setPort(this.port);
+        http_connector.setHost(address);
+
+        // sset SSL
+        String keystroefile = RestServer.class.getClass().getResource("/keystore").toString();
+        SslSocketConnector https_connector=new SslSocketConnector();
+        https_connector.setHost(address);
+        https_connector.setKeystoreType("JKS");
+        https_connector.setPort(this.sslport);
+        https_connector.setKeystore(keystroefile);
+        https_connector.setPassword("123456");
+        https_connector.setKeyPassword("123456");
+        server.setConnectors(new Connector[] {http_connector,https_connector});
 
         // static html context
         /*
@@ -90,6 +108,7 @@ public class RestServer extends AbstractIdleService {
         LOG.info("indexUri = " + indexUri.toString());
         */
         String jarpath = RestServer.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        LOG.info("jarpath = "+jarpath);
         Path p1 = Paths.get(jarpath);
         Path p2 = p1.getParent().getParent().resolve(WEBROOT_INDEX);
         LOG.info("web root = "+p2.toUri().toASCIIString());
@@ -141,6 +160,7 @@ public class RestServer extends AbstractIdleService {
 
     String address = DEFAULT_ADDRESS;
     int port = DEFAULT_PORT;
+    int sslport = DEFAULT_SSL_PORT;
     if (cmd.hasOption("p")) {
       try {
         port = Integer.parseInt(cmd.getOptionValue("p"));
@@ -153,7 +173,7 @@ public class RestServer extends AbstractIdleService {
     if (cmd.hasOption("a")) {
       address = cmd.getOptionValue("a");
     }
-    RestServer server = new RestServer(address, port);
+    RestServer server = new RestServer(address, port,sslport);
     server.startUp();
     // run until we're done
   }
