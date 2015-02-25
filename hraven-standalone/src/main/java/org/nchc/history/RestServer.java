@@ -99,30 +99,21 @@ public class RestServer extends AbstractIdleService {
         https_connector.setKeyPassword("123456");
         server.setConnectors(new Connector[] {http_connector,https_connector});
 
-        // static html context
-        /*
-        URL indexUri = this.getClass().getResource(WEBROOT_INDEX);
-        URI baseUri = indexUri.toURI();
-
-        LOG.info("baseUri = " + baseUri.toASCIIString());
-        LOG.info("indexUri = " + indexUri.toString());
-        */
+        // static html context, use to get css and js under WEBROOT_INDEX
         String jarpath = RestServer.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         LOG.info("jarpath = "+jarpath);
         Path p1 = Paths.get(jarpath);
         Path p2 = p1.getParent().getParent().resolve(WEBROOT_INDEX);
         LOG.info("web root = "+p2.toUri().toASCIIString());
-
         WebAppContext wc = new WebAppContext();
         wc.setResourceBase(p2.toUri().toASCIIString());
-        wc.setContextPath("/runJetty");
+        wc.setContextPath("/resource");
 
         // Restful context
         ServletHolder sh = new ServletHolder(ServletContainer.class);
         sh.setInitParameter("com.sun.jersey.config.property.packages", "org.nchc.rest");
         sh.setInitParameter(JSONConfiguration.FEATURE_POJO_MAPPING, "true");
         Context context = new Context(server, "/", Context.SESSIONS);
-//        context.setResourceBase(baseUri.toASCIIString());
         context.addServlet(sh, "/*");
 
         //add web and restful context
@@ -132,49 +123,10 @@ public class RestServer extends AbstractIdleService {
     }
 
 
-
   @Override
   protected void shutDown() throws Exception {
     server.stop();
   }
 
-  private static void printUsage(Options opts) {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("bin/hraven rest start", "", opts,
-        "To run the REST server, execute bin/hraven rest start|stop [-p <port>]", true);
-  }
 
-  public static void main(String[] args) throws Exception {
-    // parse commandline options
-    Options opts = new Options();
-    opts.addOption("p", "port", true, "Port for server to bind to (default 8080)");
-    opts.addOption("a", "address", true, "IP address for server to bind to (default 0.0.0.0)");
-    CommandLine cmd = null;
-    try {
-      cmd = new PosixParser().parse(opts, args);
-    } catch (ParseException pe) {
-      LOG.fatal("Failed to parse arguments", pe);
-      printUsage(opts);
-      System.exit(1);
-    }
-
-    String address = DEFAULT_ADDRESS;
-    int port = DEFAULT_PORT;
-    int sslport = DEFAULT_SSL_PORT;
-    if (cmd.hasOption("p")) {
-      try {
-        port = Integer.parseInt(cmd.getOptionValue("p"));
-      } catch (NumberFormatException nfe) {
-        LOG.fatal("Invalid integer '"+cmd.getOptionValue("p")+"'", nfe);
-        printUsage(opts);
-        System.exit(2);
-      }
-    }
-    if (cmd.hasOption("a")) {
-      address = cmd.getOptionValue("a");
-    }
-    RestServer server = new RestServer(address, port,sslport);
-    server.startUp();
-    // run until we're done
-  }
 }

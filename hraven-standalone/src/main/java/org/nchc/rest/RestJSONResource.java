@@ -169,30 +169,10 @@ public class RestJSONResource extends BaseResource{
         return getQueryService().getRunningJobName(username);
     }
 
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    @Path("hello")
-    public String sayHtmlHello() {
-        return "<html> " + "<title>" + "Hello Jersey" + "</title>"
-                + "<body><h1>" + "Hello Jersey" + "</body></h1>" + "</html> ";
-    }
 
-    @GET
-    @Produces(MediaType.TEXT_HTML)
-    @Path("template")
-    public String template() throws IOException {
-        InputStream is = RestJSONResource.class.getClass().getResourceAsStream("/index_template");
-        String template ="";
 
-        try {
-            template = IOUtils.toString(is);
-        }catch (IOException ioe){
-            LOG.error(ioe.toString());
-        }finally {
-            is.close();
-        }
-        return template;
-    }
+
+
 
     /* post sample
     @POST

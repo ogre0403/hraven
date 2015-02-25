@@ -115,37 +115,4 @@ public class JSONPResource extends RestJSONResource{
     }
 
 
-    @GET
-    @Path("jsonp1")
-    @Produces({"application/javascript"})
-    public JSONWithPadding testJSONP1(@QueryParam("callback") String callback){
-        List<String> ls = new LinkedList<String>();
-        ls.add("aaa");
-        ls.add("bbb");
-        return new JSONWithPadding(ls, callback);
-    }
-
-    @GET
-    @Path("jsonp2")
-    @Produces({"application/javascript"})
-    public JSONWithPadding testJSONP2(@QueryParam("callback") String callback){
-        RunningStatusDAO dao = new RunningStatusDAO();
-        return new JSONWithPadding(dao, callback);
-    }
-
-    @GET
-    @Path("jsonp3")
-    @Produces({"application/javascript"})
-    public JSONWithPadding testJSONP3(@QueryParam("callback") String callback){
-        RunningStatusDAO dao1 = new RunningStatusDAO(1,1,1,1,1);
-
-        RunningStatusDAO dao2 = new RunningStatusDAO(2,2,2,2,2);
-        RunningStatusDAO dao3 = new RunningStatusDAO(3,3,3,3,3);
-        LinkedList<RunningStatusDAO> ll = new LinkedList<RunningStatusDAO>();
-        ll.add(dao1);
-        ll.add(dao2);
-        ll.add(dao3);
-        return new JSONWithPadding(ll, callback);
-    }
-
 }

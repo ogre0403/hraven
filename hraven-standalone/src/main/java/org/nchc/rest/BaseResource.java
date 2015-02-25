@@ -1,15 +1,23 @@
 package org.nchc.rest;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Created by 1403035 on 2015/2/2.
  */
+
+@Path("/")
 public class BaseResource {
     private static final Log LOG = LogFactory.getLog(BaseResource.class);
     protected static final String SLASH = "/" ;
@@ -35,5 +43,24 @@ public class BaseResource {
                     queryThreadLocal.get(), Thread.currentThread().getName()));
         }
         return queryThreadLocal.get();
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Path("/")
+    public String template() throws IOException {
+        InputStream is = RestJSONResource.class.getClass().getResourceAsStream("/index_template");
+        String template ="";
+        try {
+            /**TODO:
+             * get user name by IAM, then replace marker in index_template
+             * */
+            template = IOUtils.toString(is);
+        }catch (IOException ioe){
+            LOG.error(ioe.toString());
+        }finally {
+            is.close();
+        }
+        return template;
     }
 }
