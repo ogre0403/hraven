@@ -260,10 +260,10 @@
               FileStatus[] jobFileStatusses;
               jobFileStatusses = findProcessFiles();
               if (jobFileStatusses.length < 1) {
-                  LOG.info("No newly job, return");
                   Thread.sleep(INTERVAL);
                   continue;
               }
+              LOG.info("Found newly job, start parse");
               run1(jobFileStatusses);
             }catch(InterruptedException e)
             {
@@ -368,7 +368,6 @@
                     qualifiedJobId = rawService.getQualifiedJobIdFromResult(result);
                     jobConf = rawService.createConfigurationFromResult(result);
                     jobhistoryraw = rawService.getJobHistoryRawFromResult(result);
-                    //TODO: use finish time instead of submit time
                     // 1. query completed job with user name and job FINISHED time
                     // 2. query completed job with user name, SUBMIT time, and job name
                     long submitTimeMillis = JobHistoryFileParserBase.getSubmitTimeMillisFromJobHistory(jobhistoryraw);
