@@ -108,9 +108,9 @@ public class Main {
             return null;
         }
 
-        conf = new Configuration();
-        String ZK = ps.getProperty("zookeeper","127.0.0.1");
-        conf.set("hbase.zookeeper.quorum",ZK);
+        conf = HBaseConfiguration.create();
+        //String ZK = ps.getProperty("zookeeper","127.0.0.1");
+        //conf.set("hbase.zookeeper.quorum",ZK);
 
         //check Htable existence
         try {
@@ -125,7 +125,7 @@ public class Main {
                 return null;
             }
         } catch (IOException e) {
-            LOG.error("Can not connect to zookeeper " + ZK);
+            LOG.error("Can not connect to zookeeper ");
             ps = null;
             StringWriter errors = new StringWriter();
             e.printStackTrace(new PrintWriter(errors));

@@ -51,8 +51,9 @@ public class RunningJobID extends Thread {
         String restserver = ps.getProperty("running.yarn.RM_web","http://192.168.56.201:8088");
         jobs_url = restserver+"/ws/v1/cluster/apps/?state=RUNNING";
         INTERVAL = Integer.parseInt(ps.getProperty("running.interval"));
-        ZK = ps.getProperty("zookeeper","127.0.0.1");
-        conf.set("hbase.zookeeper.quorum",ZK);
+
+        //ZK = ps.getProperty("zookeeper","127.0.0.1");
+        //conf.set("hbase.zookeeper.quorum",ZK);
 
         LOG.info("running.yarn.restserver: " + restserver);
         LOG.info("running.yarn.resturl: " + jobs_url);
