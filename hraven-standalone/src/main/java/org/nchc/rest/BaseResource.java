@@ -16,6 +16,7 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.nchc.extend.ExtendConstants;
 import org.nchc.rest.iam.BasicRequest;
 import org.nchc.rest.iam.IamConstants;
 import org.nchc.rest.iam.UsernodeRequest;
@@ -73,7 +74,9 @@ public class BaseResource {
         return queryThreadLocal.get();
     }
 
-    private static DefaultHttpClient getSSLHttpClient() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    private static DefaultHttpClient getSSLHttpClient()
+            throws UnrecoverableKeyException, NoSuchAlgorithmException,
+            KeyStoreException, KeyManagementException {
         DefaultHttpClient httpClient = new DefaultHttpClient();
         TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
             @Override
@@ -89,20 +92,34 @@ public class BaseResource {
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path("/")
-    public String index(@CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token) throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public String index(@CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token)
+            throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException,
+            KeyStoreException, KeyManagementException {
 
         // if no PUBLIC_APP_USER_SSO_TOKEN cookie, which means non-https and show normal index.html.
         // For security issue, should return error.html in production environment.
-        if(sso_token == null)
-            return IOUtils.toString(RestJSONResource.class.getClass().getResourceAsStream("/index.html"));
+
+        if(sso_token == null){
+            return ExtendConstants.isHttpEnable == true ?
+                    IOUtils.toString(RestJSONResource.class.getClass().getResourceAsStream("/index.html")):
+                    IOUtils.toString(RestJSONResource.class.getClass().getResourceAsStream("/error.html"));
+        }
+
 
         String loginName = getLoginNameByCookie(sso_token);
 
-        // show error page if IAM authentication fail
-        // or show index page with authenticated user
+        // if IAM authentication fail
+        //      show error page
+        // else
+        //      if superuser login
+        //          show index page
+        //      else
+        //          show index page with authenticated user
         return loginName == null ?
                 IOUtils.toString(RestJSONResource.class.getClass().getResourceAsStream("/error.html")):
-                getIndex(loginName);
+                    loginName.equals(ExtendConstants.SUPERUSER) ?
+                        IOUtils.toString(RestJSONResource.class.getClass().getResourceAsStream("/index.html")):
+                        getIndex(loginName);
     }
 
     private String getIndex(String user) throws IOException {
@@ -118,7 +135,9 @@ public class BaseResource {
         return template.replaceAll(IamConstants.MARKER,user);
     }
 
-    private String getLoginNameByCookie(String cookie) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+    private String getLoginNameByCookie(String cookie)
+            throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+            KeyManagementException, IOException {
         LOG.info("cookie: " + cookie);
 
         DefaultHttpClient httpClient = getSSLHttpClient();
@@ -130,7 +149,8 @@ public class BaseResource {
         return loginUser;
     }
 
-    private UuidRequest handleBasicRequest(BasicRequest br, String cookie, DefaultHttpClient httpClient) throws IOException {
+    private UuidRequest handleBasicRequest(BasicRequest br, String cookie, DefaultHttpClient httpClient)
+            throws IOException {
         if(br == null || cookie == null || httpClient == null){
             return null;
         }

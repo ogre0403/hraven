@@ -1,45 +1,13 @@
 #!/bin/bash
-#
-# Copyright 2013 Twitter, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 
-# Run on the daemon node per specific cluster
-# Usage ./jobFilePreprocessor.sh [hadoopconfdir]
-#   [historyrawdir] [historyprocessingdir] [cluster] [batchsize]
-
-#if [ $# -ne 2 ]
-#then
-#  echo "Usage: `basename $0` [history_dir] [cluster]"
-#  exit 1
-#fi
 
 source $(dirname $0)/hraven-etl-env.sh
 
 #export HADOOP_HEAPSIZE=4000
 myscriptname=$(basename "$0" .sh)
 pidfile=$HRAVEN_PID_DIR/$myscriptname.pid
-#stopfile=$HRAVEN_PID_DIR/$myscriptname.stop
 
-#if [ -f $stopfile ]; then
-#  echo "Error: not allowed to run. Remove $stopfile continue." 1>&2
-#  exit 1
-#fi
-
-#create_pidfile $HRAVEN_PID_DIR
-#trap 'cleanup_pidfile_and_exit $HRAVEN_PID_DIR' INT TERM EXIT
-
+JAVA_OPTS=" -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true "
 
 hadoop_rotate_log ()
 {
@@ -89,7 +57,7 @@ case $startStop in
 
     hadoop_rotate_log $log
     echo starting and logging to $log
-    nohup java -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Main -d > $log 2>&1 & 
+    nohup java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Main -d > $log 2>&1 &
     echo $! > $pidfile
     ;;
 
@@ -108,8 +76,3 @@ case $startStop in
     exit 1
     ;;
 esac
-
-
-
-#nohup java -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Main -d > $HRAVEN_HOME/logs/logs.out 2>&1 & echo $! > $pidfile
-

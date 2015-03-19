@@ -31,6 +31,7 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.thread.QueuedThreadPool;
+import org.nchc.extend.ExtendConstants;
 
 import java.io.File;
 import java.io.InputStream;
@@ -52,25 +53,26 @@ public class RestServer extends AbstractIdleService {
 
   private static final Log LOG = LogFactory.getLog(RestServer.class);
 
-  private final String address;
-  private final int port;
-  private final int sslport;
+  private String address;
+  private int port;
+  private int sslport;
   private Server server;
 
-  public RestServer(String address, int port,int sslport) {
-    this.address = address;
-    this.port = port;
-    this.sslport = sslport;
-  }
+//  public RestServer(String address, int port,int sslport) {
+//    this.address = address;
+//    this.port = port;
+//    this.sslport = sslport;
+//  }
 
   public RestServer(Properties ps){
-      this.address = DEFAULT_ADDRESS;
-      int port = Integer.parseInt(ps.getProperty("rest.port", DEFAULT_PORT+""));
-      int sslport = Integer.parseInt(ps.getProperty("rest.ssl.port",DEFAULT_SSL_PORT+""));
-      LOG.info("rest.port: " + port);
-      LOG.info("rest.ssl.port: " + sslport);
-      this.port = port;
-      this.sslport = sslport;
+      this.address = ps.getProperty("rest.address",DEFAULT_ADDRESS);
+      this.port = Integer.parseInt(ps.getProperty("rest.port", DEFAULT_PORT+""));
+      this.sslport = Integer.parseInt(ps.getProperty("rest.ssl.port",DEFAULT_SSL_PORT+""));
+      setSuperUser(ps);
+      enableHttp(ps);
+      LOG.info("rest.address: " + this.address);
+      LOG.info("rest.port: " + this.port);
+      LOG.info("rest.ssl.port: " + this.sslport);
   }
     @Override
     protected void startUp() throws Exception {
@@ -83,21 +85,26 @@ public class RestServer extends AbstractIdleService {
         server.setSendDateHeader(false);
         server.setStopAtShutdown(true);
 
-        // set ip and port
-        Connector http_connector = new SelectChannelConnector();
-        http_connector.setPort(this.port);
-        http_connector.setHost(address);
 
         // sset SSL
         String keystroefile = RestServer.class.getClass().getResource("/keystore").toString();
         SslSocketConnector https_connector=new SslSocketConnector();
-        https_connector.setHost(address);
+        https_connector.setHost(this.address);
         https_connector.setKeystoreType("JKS");
         https_connector.setPort(this.sslport);
         https_connector.setKeystore(keystroefile);
         https_connector.setPassword("123456");
         https_connector.setKeyPassword("123456");
-        server.setConnectors(new Connector[] {http_connector,https_connector});
+        server.setConnectors(new Connector[] {https_connector});
+
+        // set non-http
+        if(ExtendConstants.isHttpEnable == true) {
+            Connector http_connector = new SelectChannelConnector();
+            http_connector.setPort(this.port);
+            http_connector.setHost(this.address);
+            server.addConnector(http_connector);
+        }
+
 
         // static html context, use to get css and js under WEBROOT_INDEX
         String jarpath = RestServer.class.getProtectionDomain().getCodeSource().getLocation().getPath();
@@ -122,6 +129,20 @@ public class RestServer extends AbstractIdleService {
         server.start();
     }
 
+    private void setSuperUser(Properties ps){
+        if(ps.containsKey("rest.superuser")){
+            ExtendConstants.SUPERUSER = ps.getProperty("rest.superuser");
+        }
+        LOG.info("rest.superuser: "+ExtendConstants.SUPERUSER);
+    }
+
+    private void enableHttp(Properties ps){
+        if(ps.containsKey("rest.http") &&
+                ps.getProperty("rest.http").equals("enable")){
+            ExtendConstants.isHttpEnable = true;
+        }
+        LOG.info("rest.superuser: "+ExtendConstants.isHttpEnable);
+    }
 
   @Override
   protected void shutDown() throws Exception {
