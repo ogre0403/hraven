@@ -16,6 +16,7 @@
     package org.nchc.history;
 
     import java.io.IOException;
+    import java.io.InterruptedIOException;
     import java.io.PrintWriter;
     import java.io.StringWriter;
     import java.util.*;
@@ -38,13 +39,11 @@
     import org.apache.hadoop.hbase.HBaseConfiguration;
     import org.apache.hadoop.hbase.KeyValue;
     import org.apache.hadoop.hbase.client.*;
+    import org.apache.hadoop.hbase.util.Bytes;
     import org.apache.hadoop.util.GenericOptionsParser;
     import org.apache.log4j.Level;
     import org.apache.log4j.Logger;
-    import org.nchc.extend.ExtendJobHistoryByIdService;
-    import org.nchc.extend.ExtendJobHistoryFileParserHadoop2;
-    import org.nchc.extend.ExtendJobHistoryRawService;
-    import org.nchc.extend.ExtendJobHistoryService;
+    import org.nchc.extend.*;
 
     /**
      * Command line tool that can be run on a periodic basis (like daily, hourly, or
@@ -80,6 +79,7 @@
       private HTable rawTable = null;
       private HTable jobTable = null;
       private HTable taskTable = null;
+      private HTable runningTable = null;
       private HashMap<JobFile,FileStatus> jobstatusmap = null;
       private static String macType = "default";
 
@@ -198,6 +198,7 @@
           rawTable = new HTable(hbaseConf, Constants.HISTORY_RAW_TABLE_BYTES);
           jobTable = new HTable(hbaseConf,Constants.HISTORY_TABLE_BYTES);
           taskTable = new HTable(hbaseConf,Constants.HISTORY_TASK_TABLE_BYTES);
+          runningTable = new HTable(hbaseConf, ExtendConstants.RUNNING_JOB_TABLE);
           jobstatusmap = new HashMap<JobFile, FileStatus>();
 
 
@@ -403,6 +404,8 @@
 
                     LOG.info("Writing secondary indexes");
                     jobHistoryByIdService.writeIndexes(jobKey_w_submitT);
+                    writeJobUser(jobKey_w_submitT);
+                    //TODO:
 
                     KeyValue keyValue = result.getColumnLatest(Constants.RAW_FAM_BYTES,  Constants.JOBHISTORY_COL_BYTES);
                     if (keyValue == null) {
@@ -470,6 +473,14 @@
                         + (qualifiedJobId != null ? qualifiedJobId.toString() : ""),iae);
                 }
             }
+        }
+
+        private void writeJobUser(JobKey jobKey) throws IOException {
+            Put p = new Put(ExtendConstants.SEP5_BYTES);
+            p.add(Bytes.toBytes("u"),Bytes.toBytes(jobKey.getUserName()),null);
+            runningTable.put(p);
+            LOG.info(String.format("Write user name [%s] into table [%s]",
+                    jobKey.getUserName(),ExtendConstants.RUNNING_JOB_TABLE));
         }
 
         private byte[] getRowKeyBytes(JobFile jobFile) {

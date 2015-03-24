@@ -34,6 +34,9 @@ public class ExtendConstants extends Constants{
     public static String RUNNING_JOB_CF = "r";
     public static byte[] RUNNING_JOB_CF_BYTES = Bytes.toBytes(RUNNING_JOB_CF);
 
+    public static String RUNNING_USER_CF = "u";
+    public static byte[] RUNNING_USER_CF_BYTES = Bytes.toBytes(RUNNING_USER_CF);
+
     public static final String MAP_ATTEMPT_TYPE       = "m";
     public static final String REDUCE_ATTEMPT_TYPE    = "r";
     public static final String OTHER_ATTEMPT_TYPE     = "o";

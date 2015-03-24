@@ -290,6 +290,20 @@ public class QueryJobService {
         return new RunningStatusDAO(mapProgress,reduceProgress,startTime,elapsedTime,ETA);
     }
 
+
+    public List<String> getUserWithin2Mon() throws IOException {
+        List<String> users2Mon = new LinkedList<String>();
+        Get get = new Get(ExtendConstants.SEP5_BYTES);
+        Result result = runningTable.get(get);
+        if(!result.isEmpty()){
+            Iterator<byte[]> iter = result.getFamilyMap(ExtendConstants.RUNNING_USER_CF_BYTES).navigableKeySet().iterator();
+            while(iter.hasNext()){
+                users2Mon.add(Bytes.toString(iter.next()));
+            }
+        }
+        return users2Mon;
+    }
+
     private Scan getTaskScan(JobKey jobKey) {
         byte[] startKey = Bytes.add(jobKeyConv.toBytes(jobKey), Constants.SEP_BYTES, Bytes.toBytes("a"));
         Scan scan = new Scan();

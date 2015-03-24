@@ -1,6 +1,4 @@
 #!/bin/sh
-
-#!/bin/sh
 # Small script to setup the HBase tables used by OpenTSDB.
 
 test -n "$HBASE_HOME" || {

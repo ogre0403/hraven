@@ -25,7 +25,9 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Main REST resource that handles binding the REST API to the JobHistoryService.
@@ -170,7 +172,31 @@ public class RestJSONResource extends BaseResource{
     }
 
 
+    @GET
+    @Path("alluser/{cluster}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, List<JobDetails>> scanAllUserUsage(
+            @PathParam("cluster") String cluster,
+            @DefaultValue("-1")@QueryParam("start") long start_time,
+            @DefaultValue("-1")@QueryParam("end") long end_time) throws IOException {
 
+        List<String> users = getQueryService().getUserWithin2Mon();
+        HashMap<String, List<JobDetails>> result = new HashMap<String, List<JobDetails>>();
+        List<JobDetails> jobs;
+
+        // return empty result when timestanp is not correct
+        if(start_time < 0 || end_time < 0 || start_time > end_time ) {
+            LOG.info(" timestanp is not correct, return empty result");
+            return result;
+        }
+        for(String user:users) {
+            LOG.info(String.format("Query [%s] SU",user));
+            jobs = getQueryService().getAllJobInTimeInterval(cluster, user, start_time, end_time, false, Integer.MAX_VALUE);
+            if(jobs.size() > 0)
+                result.put(user,jobs);
+        }
+        return result;
+    }
 
 
 

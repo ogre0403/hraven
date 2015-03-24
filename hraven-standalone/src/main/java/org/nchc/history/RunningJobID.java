@@ -33,35 +33,28 @@ public class RunningJobID extends Thread {
     private static String jobs_url;
     private static JsonParser parser = new JsonParser();
     private static DefaultHttpClient httpClient = new DefaultHttpClient();
-//    private static String STATE = "RUNNING";
     private static int INTERVAL = 30000;
-    private static String RUNNING_TABLE = "job_running";
-
     private static HTable htable;
-    private static String ZK = "127.0.0.1";
     private static Configuration conf = null;
 
-
+//  private static String ZK = "127.0.0.1";
+//  private static String STATE = "RUNNING";
+//  private static String RUNNING_TABLE = "job_running";
 
     public RunningJobID(Properties ps) {
-        // initial configuration here
+
         conf = HBaseConfiguration.create();
         //http://192.168.56.201:8088/ws/v1/cluster/apps/?state=RUNNING
         //jobs_url = ps.getProperty("running.yarn_rest","http://127.0.0.1:8088/ws/v1/cluster/apps/");
         String restserver = ps.getProperty("running.yarn.RM_web","http://192.168.56.201:8088");
         jobs_url = restserver+"/ws/v1/cluster/apps/?state=RUNNING";
         INTERVAL = Integer.parseInt(ps.getProperty("running.interval"));
-
-        //ZK = ps.getProperty("zookeeper","127.0.0.1");
-        //conf.set("hbase.zookeeper.quorum",ZK);
-
         LOG.info("running.yarn.restserver: " + restserver);
         LOG.info("running.yarn.resturl: " + jobs_url);
-        LOG.info("zookeeper: " + ZK);
         LOG.info("running.interval: " + INTERVAL);
 
         try {
-            htable = new HTable(conf,RUNNING_TABLE);
+            htable = new HTable(conf,ExtendConstants.RUNNING_JOB_TABLE);
             htable.setAutoFlush(false);
         } catch (IOException e) {
             StringWriter errors = new StringWriter();
