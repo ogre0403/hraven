@@ -7,11 +7,11 @@ import time
 import sys
 import os
 
-WEB_URL = "http://140.110.141.58:8080/"
+WEB_URL = "https://140.110.141.58:8443/"
 CLUSTER = "NCHC"
 REST_URL= WEB_URL + "api/v1/alluser/"+CLUSTER+"/?start=%s&end=%s"
-ROOT_LOG_DIR = "D:"
-#ROOT_LOG_DIR = "/home/acctadm/qdaily"
+#ROOT_LOG_DIR = "/tmp"
+ROOT_LOG_DIR = "/home/acctadm1/qdaily"
 
 # generate in checkInput()
 MONTH_LOG_DIR = ""
@@ -26,8 +26,8 @@ def main():
     #Convert JSON string into Python nested dictionary/list.
     r = json.loads(j)
 
-    writer1 = open(LOG_DAILY_DETAIL,"w+")
-    writer2 = open(LOG_DAILY_SUMMARY,"w+")
+    writer1 = os.fdopen(os.open(LOG_DAILY_DETAIL, os.O_WRONLY | os.O_CREAT, 0600), 'w')
+    writer2 = os.fdopen(os.open(LOG_DAILY_SUMMARY, os.O_WRONLY | os.O_CREAT, 0600), 'w')
     outputLog(r,writer1, writer2)
     writer1.close()
     writer2.close()

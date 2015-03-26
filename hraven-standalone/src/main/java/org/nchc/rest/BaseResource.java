@@ -74,7 +74,7 @@ public class BaseResource {
         return queryThreadLocal.get();
     }
 
-    private static DefaultHttpClient getSSLHttpClient()
+    protected static DefaultHttpClient getSSLHttpClient()
             throws UnrecoverableKeyException, NoSuchAlgorithmException,
             KeyStoreException, KeyManagementException {
         DefaultHttpClient httpClient = new DefaultHttpClient();
@@ -149,7 +149,7 @@ public class BaseResource {
         return loginUser;
     }
 
-    private UuidRequest handleBasicRequest(BasicRequest br, String cookie, DefaultHttpClient httpClient)
+    protected UuidRequest handleBasicRequest(BasicRequest br, String cookie, DefaultHttpClient httpClient)
             throws IOException {
         if(br == null || cookie == null || httpClient == null){
             return null;

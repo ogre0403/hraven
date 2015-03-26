@@ -17,15 +17,24 @@ package org.nchc.rest;
 
 import com.google.common.base.Stopwatch;
 import com.twitter.hraven.*;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.nchc.extend.ExtendConstants;
+import org.nchc.rest.iam.BasicRequest;
+import org.nchc.rest.iam.UuidRequest;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +57,14 @@ public class RestJSONResource extends BaseResource{
             @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time,
-            @DefaultValue("10")@QueryParam("size") int size) throws IOException {
+            @DefaultValue("10")@QueryParam("size") int size,
+            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token) throws IOException {
+
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return new LinkedList<JobDetails>();
+        }
+
         if(start_time < 0 || end_time < 0 || start_time > end_time ) {
             // given incorrect Time interval or time interval not set, return all Job runs
             return getQueryService().getCertainJobAllRuns(cluster,user,jobname,counter,size);
@@ -66,7 +82,15 @@ public class RestJSONResource extends BaseResource{
             @DefaultValue("false")@QueryParam("counter") boolean counter,
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time,
-            @DefaultValue("10")@QueryParam("size") int size) throws IOException {
+            @DefaultValue("10")@QueryParam("size") int size,
+            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token) throws IOException {
+
+        LOG.info("SSO_TOKEN:" + sso_token);
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return new LinkedList<JobDetails>();
+        }
+
         if(start_time < 0 || end_time < 0 || start_time > end_time ) {
             // given incorrect Time interval or time interval not set, return all Job runs
             return getQueryService().getAllJobInTimeInterval(cluster,user,counter,size);
@@ -78,7 +102,13 @@ public class RestJSONResource extends BaseResource{
     @Path("jobList/{cluster}/{user}")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> getJobList(@PathParam("cluster") String cluster,
-                                   @PathParam("user") String user) throws IOException {
+                                   @PathParam("user") String user,
+                                   @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token) throws IOException {
+
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return new LinkedList<String>();
+        }
         return getQueryService().getAllJobName(cluster,user);
     }
 
@@ -88,7 +118,12 @@ public class RestJSONResource extends BaseResource{
     public List<String> getRunList(
             @PathParam("cluster") String cluster,
             @PathParam("user") String user,
-            @PathParam("jobname") String jobname)throws IOException {
+            @PathParam("jobname") String jobname,
+            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token)throws IOException {
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return new LinkedList<String>();
+        }
         return getQueryService().getCertainJobAllRunsId(cluster,user,jobname);
     }
 
@@ -97,7 +132,12 @@ public class RestJSONResource extends BaseResource{
     @Produces(MediaType.APPLICATION_JSON)
     public JobDetails getJobById(@PathParam("cluster") String cluster,
                                @QueryParam("jobId") String jobId,
-                               @DefaultValue("false")@QueryParam("counter") boolean counter ) throws IOException {
+                               @DefaultValue("false")@QueryParam("counter") boolean counter,
+                               @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token ) throws IOException {
+    if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+        LOG.info("rest auth fail, return no results");
+        return null;
+    }
     LOG.info("Fetching JobDetails for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
 
@@ -120,7 +160,12 @@ public class RestJSONResource extends BaseResource{
     @Path("tasks/{cluster}/{jobId}")
     @Produces(MediaType.APPLICATION_JSON)
     public List<TaskDetails> getJobTasksById(@PathParam("cluster") String cluster,
-                                           @PathParam("jobId") String jobId) throws IOException {
+                                           @PathParam("jobId") String jobId,
+                                           @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token ) throws IOException {
+    if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+        LOG.info("rest auth fail, return no results");
+        return new LinkedList<TaskDetails>();
+    }
     LOG.info("Fetching tasks info for jobId=" + jobId);
     Stopwatch timer = new Stopwatch().start();
     JobDetails jobDetails = getQueryService().getJobByJobID(cluster, jobId, false, true);
@@ -142,7 +187,13 @@ public class RestJSONResource extends BaseResource{
     @GET
     @Path("running/status/{jobId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public RunningStatusDAO getRunStatus(@PathParam("jobId") String jobId) throws IOException {
+    public RunningStatusDAO getRunStatus(@PathParam("jobId") String jobId,
+                                         @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token
+                                         ) throws IOException {
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return null;
+        }
         LOG.debug("query running " +  jobId+" status");
         RunningStatusDAO dao = getQueryService().getRunningJobStatus(jobId);
         if (dao == null){
@@ -158,7 +209,12 @@ public class RestJSONResource extends BaseResource{
     @Path("running/id/{username}/{jobname}")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> GetRunningJobID(@PathParam("username")String username,
-                                        @PathParam("jobname")String jobname ) throws IOException {
+                                        @PathParam("jobname")String jobname,
+                                        @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token) throws IOException {
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return new LinkedList<String>();
+        }
         LOG.debug("query running " +  username+ "/" + jobname +"application id");
         return getQueryService().getRunningJobID(username,jobname);
     }
@@ -166,7 +222,12 @@ public class RestJSONResource extends BaseResource{
     @GET
     @Path("running/job/{username}")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<String> getRuningJobName(@PathParam("username") String username) throws IOException {
+    public List<String> getRuningJobName(@PathParam("username") String username,
+                                         @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token) throws IOException {
+        if (ExtendConstants.isAuthEnable == true && checkAuth(sso_token) == false){
+            LOG.info("rest auth fail, return no results");
+            return new LinkedList<String>();
+        }
         LOG.debug("query running " +  username +" job name.");
         return getQueryService().getRunningJobName(username);
     }
@@ -198,7 +259,51 @@ public class RestJSONResource extends BaseResource{
         return result;
     }
 
-
+    private boolean checkAuth(String cookie) {
+        if (cookie != null)
+            LOG.info("check auth with cookie: " + cookie);
+        DefaultHttpClient httpClient = null;
+        try {
+            httpClient = getSSLHttpClient();
+        } catch (UnrecoverableKeyException e) {
+            StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            LOG.error(errors.toString());
+            httpClient.getConnectionManager().shutdown();
+            return false;
+        } catch (NoSuchAlgorithmException e) {
+            StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            LOG.error(errors.toString());
+            httpClient.getConnectionManager().shutdown();
+            return false;
+        } catch (KeyStoreException e) {
+            StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            LOG.error(errors.toString());
+            httpClient.getConnectionManager().shutdown();
+            return false;
+        } catch (KeyManagementException e) {
+            StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            LOG.error(errors.toString());
+            httpClient.getConnectionManager().shutdown();
+            return false;
+        }
+        BasicRequest br = new BasicRequest();
+        UuidRequest uuid = null;
+        try {
+            uuid = handleBasicRequest(br,cookie,httpClient);
+        } catch (IOException e) {
+            StringWriter errors = new StringWriter();
+            e.printStackTrace(new PrintWriter(errors));
+            LOG.error(errors.toString());
+            httpClient.getConnectionManager().shutdown();
+            return false;
+        }
+        httpClient.getConnectionManager().shutdown();
+        return uuid == null ? false:true;
+    }
 
     /* post sample
     @POST

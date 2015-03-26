@@ -70,6 +70,7 @@ public class RestServer extends AbstractIdleService {
       this.sslport = Integer.parseInt(ps.getProperty("rest.ssl.port",DEFAULT_SSL_PORT+""));
       setSuperUser(ps);
       enableHttp(ps);
+      enableAuth(ps);
       LOG.info("rest.address: " + this.address);
       LOG.info("rest.port: " + this.port);
       LOG.info("rest.ssl.port: " + this.sslport);
@@ -144,6 +145,13 @@ public class RestServer extends AbstractIdleService {
         LOG.info("rest.superuser: "+ExtendConstants.isHttpEnable);
     }
 
+    private void enableAuth(Properties ps){
+        if(ps.containsKey("rest.auth") &&
+                ps.getProperty("rest.auth").equals("enable")){
+            ExtendConstants.isAuthEnable = true;
+        }
+        LOG.info("rest.auth:" + ExtendConstants.isAuthEnable);
+    }
   @Override
   protected void shutDown() throws Exception {
     server.stop();

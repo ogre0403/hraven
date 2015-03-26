@@ -109,8 +109,6 @@ public class Main {
         }
 
         conf = HBaseConfiguration.create();
-        //String ZK = ps.getProperty("zookeeper","127.0.0.1");
-        //conf.set("hbase.zookeeper.quorum",ZK);
 
         //check Htable existence
         try {

@@ -2,6 +2,7 @@ $(document).ready(function() {
 
     // share variable
     var CLUSTER = "NCHC";
+    // change to yarn.nchc.org.tw in production, cookie only pass to ws iff in .nchc.org.tw domain
     var SERVER = "https://192.168.56.201:8443/"
     var RESTPREFIX = "api/jsonp/";
     var dataarray;

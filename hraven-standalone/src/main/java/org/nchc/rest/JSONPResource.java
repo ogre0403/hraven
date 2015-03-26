@@ -24,8 +24,9 @@ public class JSONPResource extends RestJSONResource{
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time,
             @DefaultValue("10")@QueryParam("size") int size,
+            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
             @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobByTimeInterval(cluster,user,jobname,counter,start_time,end_time,size),callback);
+        return new JSONWithPadding(getJobByTimeInterval(cluster,user,jobname,counter,start_time,end_time,size,sso_token),callback);
     }
 
     @GET
@@ -38,8 +39,9 @@ public class JSONPResource extends RestJSONResource{
             @DefaultValue("-1")@QueryParam("start") long start_time,
             @DefaultValue("-1")@QueryParam("end") long end_time,
             @DefaultValue("10")@QueryParam("size") int size,
+            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
             @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobByTimeInterval(cluster,user,counter,start_time,end_time,size),callback);
+        return new JSONWithPadding(getJobByTimeInterval(cluster,user,counter,start_time,end_time,size,sso_token),callback);
     }
 
 
@@ -48,8 +50,9 @@ public class JSONPResource extends RestJSONResource{
     @Produces({"application/javascript"})
     public JSONWithPadding getJobList(@PathParam("cluster") String cluster,
                                    @PathParam("user") String user,
+                                   @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
                                    @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobList(cluster,user),callback);
+        return new JSONWithPadding(getJobList(cluster,user,sso_token),callback);
     }
 
 
@@ -60,8 +63,9 @@ public class JSONPResource extends RestJSONResource{
             @PathParam("cluster") String cluster,
             @PathParam("user") String user,
             @PathParam("jobname") String jobname,
+            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
             @QueryParam("callback") String callback)throws IOException {
-        return new JSONWithPadding(getRunList(cluster,user,jobname),callback);
+        return new JSONWithPadding(getRunList(cluster,user,jobname,sso_token),callback);
     }
 
 
@@ -71,8 +75,9 @@ public class JSONPResource extends RestJSONResource{
     public JSONWithPadding getJobById(@PathParam("cluster") String cluster,
                                  @QueryParam("jobId") String jobId,
                                  @DefaultValue("false")@QueryParam("counter") boolean counter,
+                                 @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
                                  @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobById(cluster,jobId,counter),callback);
+        return new JSONWithPadding(getJobById(cluster,jobId,counter,sso_token),callback);
     }
 
 
@@ -81,8 +86,9 @@ public class JSONPResource extends RestJSONResource{
     @Produces({"application/javascript"})
     public JSONWithPadding getJobTasksById(@PathParam("cluster") String cluster,
                                              @PathParam("jobId") String jobId,
+                                             @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
                                              @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getJobTasksById(cluster,jobId),callback);
+        return new JSONWithPadding(getJobTasksById(cluster,jobId,sso_token),callback);
     }
 
 
@@ -90,8 +96,9 @@ public class JSONPResource extends RestJSONResource{
     @Path("running/status/{jobId}")
     @Produces({"application/javascript"})
     public JSONWithPadding getRunStatus(@PathParam("jobId") String jobId,
-                                         @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getRunStatus(jobId),callback);
+                                        @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
+                                        @QueryParam("callback") String callback) throws IOException {
+        return new JSONWithPadding(getRunStatus(jobId,sso_token),callback);
     }
 
 
@@ -100,8 +107,9 @@ public class JSONPResource extends RestJSONResource{
     @Produces({"application/javascript"})
     public JSONWithPadding GetRunningJobID(@PathParam("username")String username,
                                         @PathParam("jobname")String jobname,
+                                        @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
                                         @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(GetRunningJobID(username,jobname),callback);
+        return new JSONWithPadding(GetRunningJobID(username,jobname,sso_token),callback);
     }
 
 
@@ -110,8 +118,9 @@ public class JSONPResource extends RestJSONResource{
     @Path("running/job/{username}")
     @Produces({"application/javascript"})
     public JSONWithPadding getRuningJobName(@PathParam("username") String username,
+                                            @CookieParam("PUBLIC_APP_USER_SSO_TOKEN")String sso_token,
                                             @QueryParam("callback") String callback) throws IOException {
-        return new JSONWithPadding(getRuningJobName(username),callback);
+        return new JSONWithPadding(getRuningJobName(username,sso_token),callback);
     }
 
 
