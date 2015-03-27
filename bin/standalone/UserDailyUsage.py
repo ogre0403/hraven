@@ -51,7 +51,7 @@ def outputLog(response, writer1, writer2):
             output[10] = "0"                            #waiting-time
             output[11] = str(item["megabyteMillis"]/1000) #wall-clock-time
             output[12] = str(item["megabyteMillis"]/1000) #cpu-time
-            output[13] = ""
+            output[13] = "0"
             print ":".join(output)
             count = count +1
             total = total + item["megabyteMillis"]/1000
@@ -63,7 +63,7 @@ def outputLog(response, writer1, writer2):
     summary[2] = "0"
     summary[3] = str(count)
     summary[4] = str(total)
-    writer2.write(":".join(summary))
+    writer2.write(":".join(summary)+"\n")
 
 
 def getDateString(ts):
