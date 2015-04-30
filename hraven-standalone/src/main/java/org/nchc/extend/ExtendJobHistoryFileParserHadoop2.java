@@ -958,6 +958,19 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         return null;
     }
 
+    public long getSU(){
+        if (endTime == ExtendConstants.NOTFOUND_VALUE || startTime == ExtendConstants.NOTFOUND_VALUE)
+        {
+            throw new ProcessingException("Cannot calculate megabytemillis for " + jobKey
+                    + " since one or more of endTime " + endTime + " startTime " + startTime
+                    + " not found!");
+        }
+        long wall_clock_time = endTime - startTime;
+        long core_num = mapAttemptMap.size() + reduceAttemptMap.size() +1 ;
+        return  wall_clock_time * core_num *1;
+    }
+
+
     public long getSU(long cpc){
         long total_su = 0L;
 

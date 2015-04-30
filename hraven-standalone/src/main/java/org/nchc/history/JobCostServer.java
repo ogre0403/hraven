@@ -437,7 +437,8 @@
                     // Usage of NCHC SU is most equivalent to MegaByteMill
                     // I DO NOT change the variable from MegaByteMillis to SU
                     // just modify the web UI display name
-                    Long su = historyFileParser.getSU(Long.parseLong(this.prop.getProperty("CPC", "1")));
+//                  Long su = historyFileParser.getSU(Long.parseLong(this.prop.getProperty("CPC", "1")));
+                    Long su = historyFileParser.getSU();
                     LOG.debug(jobKey_w_finishT.getJobId() +" SU = " + su);
 
                     List<Put> mbPut = PutUtil.getMegaByteMillisPut(su, jobKey_w_submitT,jobKey_w_finishT);
