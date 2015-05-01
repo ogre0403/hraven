@@ -30,36 +30,17 @@
     <dependency>
         <groupId>com.twitter.hraven</groupId>
         <artifactId>hraven-core</artifactId>
-        <version>0.9.17-SNAPSHOT</version>
+        <version>${project.parent.version}</version>
     </dependency>
     <dependency>
         <groupId>com.twitter.hraven</groupId>
         <artifactId>hraven-etl</artifactId>
-        <version>0.9.17-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-common</artifactId>
-        <version>${hadoop.version}</version>
-
-    </dependency>
-    <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-mapreduce-client-common</artifactId>
-        <version>${hadoop.version}</version>
-
-    </dependency>
-    <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-core</artifactId>
-        <version>2.0.0-mr1-cdh4.7.0</version>
-
+        <version>${project.parent.version}</version>
     </dependency>
     <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase-client</artifactId>
         <version>${hbase.version}</version>
-
         <exclusions>
             <exclusion>
                 <groupId>org.apache.thrift</groupId>

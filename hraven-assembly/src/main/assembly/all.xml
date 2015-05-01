@@ -54,7 +54,7 @@
     </fileSet>
     <!-- Include the top level bin directory -->
     <fileSet>
-      <directory>${project.basedir}/../bin</directory>
+      <directory>${project.basedir}/../bin/standalone</directory>
       <outputDirectory>bin</outputDirectory>
       <fileMode>0755</fileMode>
       <directoryMode>0755</directoryMode>

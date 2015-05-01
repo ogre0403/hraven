@@ -31,7 +31,7 @@ hadoop_rotate_log ()
 etl=`dirname "$0"`
 etl=`cd "$etl">/dev/null; pwd`
 CLASSPATH=`hbase classpath`
-HRAVEN_HOME=${HRAVEN_HOME:-$etl/../../}
+HRAVEN_HOME=${HRAVEN_HOME:-$etl/../}
 startStop=$1
 
 # Add libs to CLASSPATH
@@ -57,7 +57,7 @@ case $startStop in
 
     hadoop_rotate_log $log
     echo starting and logging to $log
-    nohup java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Main -d > $log 2>&1 &
+    nohup java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Casterly -d > $log 2>&1 &
     echo $! > $pidfile
     ;;
 

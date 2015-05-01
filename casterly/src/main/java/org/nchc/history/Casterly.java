@@ -8,7 +8,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.util.ToolRunner;
 import org.nchc.extend.ExtendConstants;
 
 import java.io.IOException;
@@ -21,12 +20,12 @@ import java.util.Properties;
 /**
  * Created by 1403035 on 2015/1/8.
  */
-public class Main {
-    private static Log LOG = LogFactory.getLog(Main.class);
-    private static String PROPFILENAME = "cost.properties";
+public class Casterly {
+    private static Log LOG = LogFactory.getLog(Casterly.class);
+    private static String PROPFILENAME = "casterly.properties";
 
     public static void main(String[] args) throws Exception {
-        new Main().run(args);
+        new Casterly().run(args);
     }
 
     public void run(String[] args) throws Exception{
