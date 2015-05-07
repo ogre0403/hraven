@@ -101,11 +101,11 @@ public class Casterly {
            return null;
         }
         // check PROXY_web
-        if(!ps.containsKey("running.yarn.PROXY_web") ||
-                !checkConnected(ps.getProperty("running.yarn.PROXY_web"))) {
-            LOG.error("check yarn Proxy restful server configuration");
-            return null;
-        }
+//        if(!ps.containsKey("running.yarn.PROXY_web") ||
+//                !checkConnected(ps.getProperty("running.yarn.PROXY_web"))) {
+//            LOG.error("check yarn Proxy restful server configuration");
+//            return null;
+//        }
 
         conf = HBaseConfiguration.create();
 

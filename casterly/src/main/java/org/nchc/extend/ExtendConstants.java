@@ -59,4 +59,6 @@ public class ExtendConstants extends Constants{
     public static String SUPERUSER="hdadm";
     public static boolean isHttpEnable = false;
     public static boolean isAuthEnable = false;
+
+    public static String[] RMservers = new String[2];
 }

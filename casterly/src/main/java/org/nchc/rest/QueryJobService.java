@@ -1,9 +1,6 @@
 package org.nchc.rest;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.twitter.hraven.*;
 import com.twitter.hraven.datasource.JobHistoryByIdService;
 import com.twitter.hraven.datasource.TaskKeyConverter;
@@ -50,7 +47,8 @@ public class QueryJobService {
     private DefaultHttpClient httpClient;
     private JsonParser parser ;
     private static String progress_url_prefix;
-    private static String progress_url_postfix;
+    private static String progress_url_postfix ="/ws/v1/mapreduce/jobs" ;
+    private int server_idx = 0;
 
     private long encodeTS(long timestamp) {
         return Long.MAX_VALUE - timestamp;
@@ -64,9 +62,14 @@ public class QueryJobService {
         this.idService = new JobHistoryByIdService(this.myConf);
         this.httpClient = new DefaultHttpClient();
         this.parser = new JsonParser();
-        this.progress_url_prefix = myConf.get("running.yarn.PROXY_web","http://192.168.56.201:8089")+ "/proxy/";
-        this.progress_url_postfix = "/ws/v1/mapreduce/jobs";
+        this.progress_url_prefix = ExtendConstants.RMservers[server_idx%2] +  "/proxy/";
+        LOG.info("default RM proxy server: "+ progress_url_prefix);
+        // running.yarn.PROXY_web and running.yarn.RM_web are the same at default
+//        String proxy_url = myConf.get("running.yarn.RM_web");
+//        this.progress_url_prefix = myConf.get("running.yarn.PROXY_web",proxy_url)+ "/proxy/";
+//        this.progress_url_postfix = "/ws/v1/mapreduce/jobs";
     }
+
 
     public List<JobDetails> getCertainJobRunsInTimeInterval(String cluster, String user, String jobname,
             long start_time, long end_time,boolean getCounter,int size) throws IOException {
@@ -237,7 +240,7 @@ public class QueryJobService {
         }
     }
 
-    public RunningStatusDAO getRunningJobStatus(String jobID){
+    public RunningStatusDAO getRunningJobStatus(String jobID)  {
         String url = progress_url_prefix + jobID + progress_url_postfix;
         HttpGet getRequest = new HttpGet(url);
         getRequest.addHeader("accept", "application/json");
@@ -255,11 +258,29 @@ public class QueryJobService {
         }
 
         JsonElement ee;
+        InputStreamReader in = null;
         try {
-            ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+            in = new InputStreamReader(response.getEntity().getContent());
+            ee = parser.parse(in);
         }catch (IOException ioe){
             httpClient.getConnectionManager().shutdown();
             return null;
+        }catch(JsonParseException je){
+            server_idx++;
+            server_idx = server_idx % 2;
+            progress_url_prefix = ExtendConstants.RMservers[server_idx]+"/proxy/";
+            LOG.warn("redirect to backup RM " +progress_url_prefix);
+            return null;
+        }
+        finally {
+            if (in != null)
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    StringWriter errors = new StringWriter();
+                    e.printStackTrace(new PrintWriter(errors));
+                    LOG.error(errors.toString());
+                }
         }
 
         JsonObject joo = ee.getAsJsonObject();

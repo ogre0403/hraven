@@ -1,9 +1,7 @@
 package org.nchc.history;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -16,10 +14,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.nchc.extend.ExtendConstants;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -36,20 +31,24 @@ public class RunningJobID extends Thread {
     private static int INTERVAL = 30000;
     private static HTable htable;
     private static Configuration conf = null;
+    private static String suffix = "/ws/v1/cluster/apps/?state=RUNNING";
 
-//  private static String ZK = "127.0.0.1";
-//  private static String STATE = "RUNNING";
-//  private static String RUNNING_TABLE = "job_running";
+    // active and backup server are stored, use server_idx to indicate which server is connected
+    private static String[] servers = new String[2];
+    private static int server_idx = 0;
 
     public RunningJobID(Properties ps) {
 
         conf = HBaseConfiguration.create();
         //http://192.168.56.201:8088/ws/v1/cluster/apps/?state=RUNNING
         //jobs_url = ps.getProperty("running.yarn_rest","http://127.0.0.1:8088/ws/v1/cluster/apps/");
-        String restserver = ps.getProperty("running.yarn.RM_web","http://192.168.56.201:8088");
-        jobs_url = restserver+"/ws/v1/cluster/apps/?state=RUNNING";
+
+        servers[0] = ps.getProperty("running.yarn.RM_web");
+        servers[1] = ps.getProperty("running.yarn.RM_web.backup",servers[0]);
+        jobs_url = servers[server_idx % 2]+ suffix;
+
         INTERVAL = Integer.parseInt(ps.getProperty("running.interval"));
-        LOG.info("running.yarn.restserver: " + restserver);
+        LOG.info("running.yarn.restserver: " + servers[server_idx % 2]);
         LOG.info("running.yarn.resturl: " + jobs_url);
         LOG.info("running.interval: " + INTERVAL);
 
@@ -116,7 +115,7 @@ public class RunningJobID extends Thread {
         return lp;
     }
 
-    private Map<String, Map<String,StringBuilder>> getJobID2() throws IOException {
+    private Map<String, Map<String,StringBuilder>> getJobID2() throws IOException{
         Map<String, Map<String,StringBuilder>> tmpdata = new HashMap<String, Map<String,StringBuilder>>();
 
         HttpGet getRequest = new HttpGet(jobs_url);
@@ -127,7 +126,24 @@ public class RunningJobID extends Thread {
             throw new RuntimeException("Failed : HTTP error code : "
                     + response.getStatusLine().getStatusCode());
         }
-        JsonElement ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+
+        InputStreamReader in = new InputStreamReader(response.getEntity().getContent());
+        JsonElement ee = null;
+
+        // TODO: How to differate between json parse error and redirect message
+        try {
+            ee = parser.parse(in);
+        }catch (JsonParseException je){
+            server_idx++;
+            server_idx = server_idx %2;
+            jobs_url = servers[server_idx]+suffix;
+            LOG.warn("redirect to backup RM " +jobs_url);
+            return null;
+        }finally {
+            in.close();
+        }
+
+
         JsonObject joo = ee.getAsJsonObject();
         if (joo.get("apps").isJsonNull()){
             return null;

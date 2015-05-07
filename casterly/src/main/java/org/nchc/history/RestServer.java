@@ -16,11 +16,15 @@ limitations under the License.
 package org.nchc.history;
 
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.apache.commons.cli.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -35,6 +39,7 @@ import org.nchc.extend.ExtendConstants;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -71,6 +76,7 @@ public class RestServer extends AbstractIdleService {
       setSuperUser(ps);
       enableHttp(ps);
       enableAuth(ps);
+      setRMservers(ps);
       LOG.info("rest.address: " + this.address);
       LOG.info("rest.port: " + this.port);
       LOG.info("rest.ssl.port: " + this.sslport);
@@ -151,6 +157,13 @@ public class RestServer extends AbstractIdleService {
             ExtendConstants.isAuthEnable = true;
         }
         LOG.info("rest.auth:" + ExtendConstants.isAuthEnable);
+    }
+
+    private void setRMservers(Properties ps){
+        if(ps.containsKey("running.yarn.RM_web")){
+            ExtendConstants.RMservers[0] = ps.getProperty("running.yarn.RM_web");
+            ExtendConstants.RMservers[1] = ps.getProperty("running.yarn.RM_web.backup",ExtendConstants.RMservers[0]);
+        }
     }
   @Override
   protected void shutDown() throws Exception {
