@@ -17,12 +17,12 @@
 # Used to configure hraven-etl environment
 
 home=$(dirname $0)
-source $home/../../conf/hraven-env.sh
+source $home/../conf/hraven-env.sh
 #source $home/pidfiles.sh
 
 #check if hraven-core.jar and hraven-etl.jar exist
 #if not, create symbolic links to the needed jars
-libhraven=`cd $(dirname $0)/../../lib;pwd;`
+libhraven=`cd $(dirname $0)/../lib;pwd;`
 if [ ! -f $libhraven/hraven-core.jar ]; then
     coreLastVersion=`ls $libhraven/hraven-core-*.jar | sort -V | tail -1`
     ln -s $coreLastVersion $libhraven/hraven-core.jar
@@ -36,6 +36,6 @@ fi
 
 # set the hraven-core jar as part of libjars and hadoop classpath
 # set this here because it only pertains to the etl logic
-export LIBJARS=$home/../../lib/hraven-core.jar
-export HADOOP_CLASSPATH=$home/../../lib/*:$LIBJARS:$HBASE_CLASSPATH
-hravenEtlJar=$home/../../lib/hraven-etl.jar
+export LIBJARS=$home/../lib/hraven-core.jar
+export HADOOP_CLASSPATH=$home/../lib/*:$LIBJARS:$HBASE_CLASSPATH
+hravenEtlJar=$home/../lib/hraven-etl.jar

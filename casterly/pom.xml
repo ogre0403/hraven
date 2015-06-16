@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>hraven</artifactId>
         <groupId>com.twitter.hraven</groupId>
@@ -10,13 +8,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.nchc.bigdata</groupId>
-    <artifactId>cost-server</artifactId>
+    <artifactId>casterly</artifactId>
     <version>0.1-SNAPSHOT</version>
-    <name>hRaven - standalone</name>
+    <name>casterly</name>
     <packaging>jar</packaging>
     <description>Standalone version of twitter hRaven</description>
 
 <dependencies>
+    <dependency>
+        <groupId>org.json</groupId>
+        <artifactId>json</artifactId>
+        <version>20140107</version>
+    </dependency>
     <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
@@ -77,6 +80,4 @@
         </exclusions>
     </dependency>
 </dependencies>
-
-
 </project>

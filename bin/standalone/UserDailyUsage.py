@@ -40,7 +40,8 @@ def outputLog(response, writer1, writer2):
             output = [None] * 14
             output[0] = key             #login-name
             output[1] = item["queue"]   #q-name
-            output[2] = item["jobName"] #job-name
+            # HIVE job name may have line break
+            output[2] = " ".join(item["jobName"].split()) #job-name
             output[3] = item["jobId"]   #job-id
             output[4] = getDateString(item["launchDate"]/1000)  #job-submit-date
             output[5] = getDateString(item["finishTime"]/1000)  #job-end-date

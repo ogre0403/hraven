@@ -1,17 +1,16 @@
 package org.nchc.history;
 
 import com.google.gson.*;
+import com.twitter.hraven.util.ByteArrayWrapper;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.nchc.extend.ExtendConstants;
@@ -20,7 +19,10 @@ import org.nchc.rest.RunningStatusDAO;
 import org.nchc.rest.iam.BasicRequest;
 import org.nchc.rest.iam.UsernodeRequest;
 import org.nchc.rest.iam.UuidRequest;
+import org.nchc.spark.dao.AppEnd;
+import org.nchc.spark.dao.AppStart;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.StringBuilder;
@@ -30,7 +32,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -55,39 +56,34 @@ public class MyHttpClient {
     private static Configuration conf = null;
 
     public static void main(String[] args) throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, URISyntaxException {
-        TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
-            @Override
-            public boolean isTrusted(X509Certificate[] certificate, String authType) {
-                return true;
-            }
-        };
-        SSLSocketFactory sf = new SSLSocketFactory(acceptingTrustStrategy, new AllowAllHostnameVerifier());
-        httpClient.getConnectionManager().getSchemeRegistry().register(new Scheme("https", 443, sf));
 
-        //String userid = testIAM("340d6b41-c857-4897-9fef-291a1ddba047");
-        String MAKER="\\$\\@MAKER\\@\\$";
-        String ts = "aaaccc  <>   $@MAKER@$ asss <> sass   $@MAKER@$  sasdd";
-        System.out.println(ts);
+        byte[] ba = IOUtils.toByteArray(new FileInputStream("D:\\EVENT_LOG_1"));
+        FSDataInputStream in = new FSDataInputStream(new ByteArrayWrapper(ba));
+        Gson gson = new GsonBuilder().create();
 
-        String ss = ts.replaceAll(MAKER,"user");
-        System.out.println(ss);
-        /*
-        Map<String, Map<String,StringBuilder>> jobs = getJobID2();
-        List<Put> lp = toPuts(jobs);
-        conf = new Configuration();
-        conf.set("hbase.zookeeper.quorum",ZK);
-        htable = new HTable(conf,"job_running");
-        htable.put(lp);
-        htable.close();
-*/
+        // skip first 2 lines
+        in.readLine();
+        in.readLine();
+
+        // AppStart
+        AppStart as = gson.fromJson(in.readLine(),AppStart.class);
+        System.out.println(as.getEvent());
+
+//        ExecutorAdd ea;
+//        for (String line = in.readLine(); line != null; line = in.readLine()) {
+//            ea = gson.fromJson(line,ExecutorAdd.class);
+//            if (!ea.getEvent().equals("SparkListenerBlockManagerAdded"))
+//                break;
+//            System.out.println(ea.getEvent());
+//        }
 
 
 
-       // getRunningStatus("application_1419570118547_0007");
-        httpClient.getConnectionManager().shutdown();
-     //   parse_json();
-    //    Map<String, List<String>> joblist =  getJobID();
-    //    updateHBaseRuningJobTable(joblist);
+
+        // AppEnd
+        in.seek(ba.length - 66);
+        AppEnd ae = gson.fromJson(in.readLine(), AppEnd.class);
+        System.out.println(ae.getEvent());
 
 
 
@@ -394,3 +390,10 @@ public class MyHttpClient {
         }
     }
 }
+
+
+
+
+
+
+

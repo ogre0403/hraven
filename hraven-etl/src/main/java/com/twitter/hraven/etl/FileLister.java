@@ -51,7 +51,7 @@ public class FileLister {
    *
    */
   private static void traverseDirs(List<FileStatus> fileStatusesList, FileSystem hdfs,
-      Path inputPath, JobFileModifiedRangePathFilter jobFileModifiedRangePathFilter)
+      Path inputPath, JobFilePathFilter jobFileModifiedRangePathFilter)
           throws IOException
   {
     // get all the files and dirs in the current dir
@@ -83,7 +83,7 @@ public class FileLister {
    * @throws IOException
    */
   public static FileStatus[] listFiles (boolean recurse, FileSystem hdfs, Path inputPath,
-      JobFileModifiedRangePathFilter jobFileModifiedRangePathFilter) throws IOException
+      JobFilePathFilter jobFileModifiedRangePathFilter) throws IOException
   {
     if (recurse) {
       List<FileStatus> fileStatusesList = new ArrayList<FileStatus>();
@@ -113,7 +113,7 @@ public class FileLister {
    * @throws IOException
    */
   public static FileStatus[] getListFilesToProcess(long maxFileSize, boolean recurse,
-      FileSystem hdfs, Path inputPath, JobFileModifiedRangePathFilter pathFilter)
+      FileSystem hdfs, Path inputPath, JobFilePathFilter pathFilter)
       throws IOException {
 
     LOG.info(" in getListFilesToProcess maxFileSize=" + maxFileSize

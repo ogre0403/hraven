@@ -56,6 +56,9 @@ public class ExtendConstants extends Constants{
     public static final String FINISHED_TIME_PREFIX_HADOOP2 = "\"finishTime\":";
     public static final byte[] FINISHED_TIME_PREFIX_HADOOP2_BYTES = Bytes.toBytes(FINISHED_TIME_PREFIX_HADOOP2);
 
+    public static final String SPARK_FILEPATH_COL="path";
+    public static final byte[] SPARK_FILEPATH_COL_BYTES = Bytes.toBytes(SPARK_FILEPATH_COL);
+
     public static String SUPERUSER="hdadm";
     public static boolean isHttpEnable = false;
     public static boolean isAuthEnable = false;
