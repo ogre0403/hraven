@@ -215,8 +215,8 @@ $(document).ready(function() {
         submitTime = timeConverter(json['submitTime']);
         finishTime = timeConverter(json['finishTime']);
 
-        $("#detailTable table tbody").children().eq(0).children().eq(1).replaceWith("<td>"+json['status']+"</td>"); // Jobname
-        $("#detailTable table tbody").children().eq(0).children().eq(3).replaceWith("<td>"+json['jobName']+"</td>"); // Job status
+        $("#detailTable table tbody").children().eq(0).children().eq(1).replaceWith("<td>"+json['jobName']+"</td>"); // Jobname
+        $("#detailTable table tbody").children().eq(0).children().eq(3).replaceWith("<td>"+json['status']+"</td>"); // Job status
         $("#detailTable table tbody").children().eq(1).children().eq(1).replaceWith("<td>"+json['user']+"</td>"); // User
         $("#detailTable table tbody").children().eq(1).children().eq(3).replaceWith("<td>"+json['queue']+"</td>"); // Queue
         $("#detailTable table tbody").children().eq(2).children().eq(1).replaceWith("<td>"+submitTime+"</td>"); // submit time

@@ -31,7 +31,7 @@ public class SparkDetails {
     private String AppID;
     private long StartTimestamp;
     private long EndTimestamp;
-    private int ExecutorCount;
+    private long ExecutorCount;
     private String User;
 
     private JobDesc jobDesc_w_finishT;
@@ -54,7 +54,7 @@ public class SparkDetails {
         return EndTimestamp;
     }
 
-    public int getExecutorCount() {
+    public long getExecutorCount() {
         return ExecutorCount;
     }
 
@@ -63,7 +63,7 @@ public class SparkDetails {
     }
 
     public void setAppName(String appName) {
-        AppName = appName;
+        AppName = appName.replaceAll(" ","_");
     }
 
     public void setAppID(String appID) {
@@ -111,7 +111,9 @@ public class SparkDetails {
         this.jobKeyBytes = jobKeyConv.toBytes(jobKey);
         setJobId(this.jobKey.getJobId().getJobIdString());
 
-//        puts.addAll(getPut());
+
+//          puts.addAll(getPut());
+        puts.add( jobKeyConv.allJobRK(jobKey));
         puts.addAll(getJobPuts());
         puts.addAll(getJobStatusPuts());
         puts.addAll(getSU());
@@ -136,8 +138,8 @@ public class SparkDetails {
 
     private List<Put> getSU(){
         List<Put> ps = new LinkedList<Put>();
-        long wall_clock_time = StartTimestamp - EndTimestamp;
-        long cpu_hour = wall_clock_time * (long)ExecutorCount;
+        long wall_clock_time =  EndTimestamp - StartTimestamp;
+        long cpu_hour = wall_clock_time * ExecutorCount;
 
         Put pMb = new Put(this.jobKeyBytes);
         pMb.add(Constants.INFO_FAM_BYTES, Constants.MEGABYTEMILLIS_BYTES, Bytes.toBytes(cpu_hour));
@@ -186,28 +188,41 @@ public class SparkDetails {
         byte[] qualifier;
 
         valueBytes = Bytes.toBytes(StartTimestamp);
-        qualifier = Bytes.toBytes("startTime");
+        qualifier = Bytes.toBytes("submit_time");
+        p.add(family, qualifier, valueBytes);
+
+        valueBytes = Bytes.toBytes(StartTimestamp);
+        qualifier = Bytes.toBytes("launch_time");
         p.add(family, qualifier, valueBytes);
 
         valueBytes = Bytes.toBytes(EndTimestamp);
-        qualifier = Bytes.toBytes("finishTime");
+        qualifier = Bytes.toBytes("finish_time");
         p.add(family, qualifier, valueBytes);
 
         valueBytes = Bytes.toBytes(User);
-        qualifier = Bytes.toBytes("userName");
+        qualifier = Bytes.toBytes("user");
         p.add(family, qualifier, valueBytes);
 
         valueBytes = Bytes.toBytes(AppName);
-        qualifier = Bytes.toBytes("jobName");
+        qualifier = Bytes.toBytes("jobname");
         p.add(family, qualifier, valueBytes);
 
         valueBytes = Bytes.toBytes(ExecutorCount);
-        qualifier = Bytes.toBytes("executorCount");
+        qualifier = Bytes.toBytes("total_maps");
+        p.add(family, qualifier, valueBytes);
+
+        valueBytes = Bytes.toBytes(((long)-1));
+        qualifier = Bytes.toBytes("total_reduces");
         p.add(family, qualifier, valueBytes);
 
         valueBytes = Bytes.toBytes(jobKey.getJobId().getJobIdString());
         qualifier = Bytes.toBytes("jobid");
         p.add(family, qualifier, valueBytes);
+
+        valueBytes = Bytes.toBytes("SPARK");
+        qualifier = Bytes.toBytes("job_queue");
+        p.add(family, qualifier, valueBytes);
+
     }
 
     public void generateJobDesc(QualifiedJobId qualifiedJobId){
