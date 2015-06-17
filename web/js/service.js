@@ -206,6 +206,19 @@ $(document).ready(function() {
     }
 
     function detailTable2(json){
+
+         $('#detailTable tr:gt(3)').remove();
+
+         if(json['totalReduces'] == '-1'){
+            $('#detailTable tr:last').after('<tr><th>Executor</th><td> </td></tr>');
+         }else{
+            $('#detailTable tr:last').after('<tr><th>Total Maps</th><td> </td><th>Total Reduces</th>	<td> </td></tr>');
+            $('#detailTable tr:last').after('<tr><th>Finished Maps</th><td> </td><th>Finished Reduces</th><td> </td></tr>');
+            $('#detailTable tr:last').after('<tr><th>Failed Maps</th><td> </td><th>Failed Reduces</th><td> </td></tr></tr>');
+         }
+
+
+
         // value of megabyteMillis is equal to cores*millis
         // normalized to NCHC SU(cores * hours) by dividing 1000*60*60
         // in order to accurate to the second decimal place,
@@ -223,12 +236,18 @@ $(document).ready(function() {
         $("#detailTable table tbody").children().eq(2).children().eq(3).replaceWith("<td>"+finishTime+"</td>"); // finish time
         $("#detailTable table tbody").children().eq(3).children().eq(1).replaceWith("<td>"+run_time+"</td>"); // run time
         $("#detailTable table tbody").children().eq(3).children().eq(3).replaceWith("<td>"+SU+"</td>"); // cost
-        $("#detailTable table tbody").children().eq(4).children().eq(1).replaceWith("<td>"+json['totalMaps']+"</td>"); // total map
-        $("#detailTable table tbody").children().eq(4).children().eq(3).replaceWith("<td>"+json['totalReduces']+"</td>"); // total reduce
-        $("#detailTable table tbody").children().eq(5).children().eq(1).replaceWith("<td>"+json['finishedMaps']+"</td>"); // finish map
-        $("#detailTable table tbody").children().eq(5).children().eq(3).replaceWith("<td>"+json['finishedReduces']+"</td>"); // finish reduce
-        $("#detailTable table tbody").children().eq(6).children().eq(1).replaceWith("<td>"+json['failedMaps']+"</td>"); // failed map
-        $("#detailTable table tbody").children().eq(6).children().eq(3).replaceWith("<td>"+json['failedReduces']+"</td>"); // failed reduce
+
+        if(json['totalReduces'] == '-1'){
+            $("#detailTable table tbody").children().eq(4).children().eq(1).replaceWith("<td>"+json['totalMaps']+"</td>"); // total map
+        }else{
+            $("#detailTable table tbody").children().eq(4).children().eq(1).replaceWith("<td>"+json['totalMaps']+"</td>"); // total map
+            $("#detailTable table tbody").children().eq(4).children().eq(3).replaceWith("<td>"+json['totalReduces']+"</td>"); // total reduce
+            $("#detailTable table tbody").children().eq(5).children().eq(1).replaceWith("<td>"+json['finishedMaps']+"</td>"); // finish map
+            $("#detailTable table tbody").children().eq(5).children().eq(3).replaceWith("<td>"+json['finishedReduces']+"</td>"); // finish reduce
+            $("#detailTable table tbody").children().eq(6).children().eq(1).replaceWith("<td>"+json['failedMaps']+"</td>"); // failed map
+            $("#detailTable table tbody").children().eq(6).children().eq(3).replaceWith("<td>"+json['failedReduces']+"</td>"); // failed reduce
+        }
+
     }
 
 
