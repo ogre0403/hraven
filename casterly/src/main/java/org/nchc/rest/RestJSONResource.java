@@ -21,8 +21,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.nchc.extend.ExtendConstants;
-import org.nchc.rest.iam.BasicRequest;
-import org.nchc.rest.iam.UuidRequest;
+import org.nchc.rest.iam.app.BasicRequest;
+import org.nchc.rest.iam.app.UuidRequest;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;

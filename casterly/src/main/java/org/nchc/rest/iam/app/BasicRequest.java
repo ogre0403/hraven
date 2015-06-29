@@ -1,4 +1,4 @@
-package org.nchc.rest.iam;
+package org.nchc.rest.iam.app;
 
 /**
  * Created by 1403035 on 2015/3/2.

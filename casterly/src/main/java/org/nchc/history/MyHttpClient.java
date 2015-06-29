@@ -1,6 +1,8 @@
 package org.nchc.history;
 
+import java.lang.reflect.Type;
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
@@ -17,9 +19,10 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.nchc.extend.ExtendConstants;
 import org.nchc.rest.iam.IamConstants;
 import org.nchc.rest.RunningStatusDAO;
-import org.nchc.rest.iam.BasicRequest;
-import org.nchc.rest.iam.UsernodeRequest;
-import org.nchc.rest.iam.UuidRequest;
+import org.nchc.rest.iam.app.BasicRequest;
+import org.nchc.rest.iam.app.UsernodeRequest;
+import org.nchc.rest.iam.app.UuidRequest;
+import org.nchc.rest.iam.unix.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -64,14 +67,22 @@ public class MyHttpClient {
         SSLSocketFactory sf = new SSLSocketFactory(acceptingTrustStrategy, new AllowAllHostnameVerifier());
         httpClient.getConnectionManager().getSchemeRegistry().register(new Scheme("https", 443, sf));
 
-        //String userid = testIAM("340d6b41-c857-4897-9fef-291a1ddba047");
+        StringBuilder u = new StringBuilder();
+        String[] u1 = new String[1];
+
+        testIAM2("4e8bc932-99be-42ed-84ad-ce7d165b7912", u1);
+
+        System.out.println("u1: " + u1[0]);
+
+
+        /*
         String MAKER="\\$\\@MAKER\\@\\$";
         String ts = "aaaccc  <>   $@MAKER@$ asss <> sass   $@MAKER@$  sasdd";
         System.out.println(ts);
 
         String ss = ts.replaceAll(MAKER,"user");
         System.out.println(ss);
-        /*
+
         Map<String, Map<String,StringBuilder>> jobs = getJobID2();
         List<Put> lp = toPuts(jobs);
         conf = new Configuration();
@@ -89,6 +100,232 @@ public class MyHttpClient {
     //    Map<String, List<String>> joblist =  getJobID();
     //    updateHBaseRuningJobTable(joblist);
 
+
+
+    }
+
+    private static void testIAM2(String SSO_TOKEN, String[] username)throws IOException, URISyntaxException{
+        String PRIVILEGED_APP_SSO_TOKEN;
+        String APP_USER_NODE_UUID;
+        String APP_COMPANY_UUID;
+        String APP_UNIX_USER_UUID;
+        String APP_UNIX_GROUP_UUID;
+        String UNIX_USERNAME;
+        String UNIX_GID;
+
+        String APP_UNIX_GROUP_NAME;
+        List<String> APP_UNIX_GROUP_MEMBER_LIST;
+        String error_msg ;
+
+        Gson gson = new Gson();
+        BasicRequest br = new BasicRequest();
+        HttpPost httpPost = new HttpPost(IamConstants.IAM_BASCI_URL);
+        httpPost.addHeader("accept", "application/json");
+        StringEntity input = new StringEntity(gson.toJson(br));
+        input.setContentType("application/json");
+        httpPost.setEntity(input);
+        HttpResponse response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        JsonElement ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        String code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println(error_msg);
+            return ;
+        }else {
+            PRIVILEGED_APP_SSO_TOKEN = ee.getAsJsonObject().get("PRIVILEGED_APP_SSO_TOKEN").getAsString();
+        }
+
+        UuidRequest uuid = new UuidRequest(PRIVILEGED_APP_SSO_TOKEN,SSO_TOKEN);
+        httpPost.setURI(new URI(IamConstants.IAM_UUID_URL));
+//        System.out.println(gson.toJson(uuid));
+        StringEntity input2 = new StringEntity(gson.toJson(uuid));
+        input2.setContentType("application/json");
+        httpPost.setEntity(input2);
+//        httpPost.setEntity(input2);
+
+        response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println(error_msg);
+            return;
+        }else {
+            APP_USER_NODE_UUID = ee.getAsJsonObject().get("APP_USER_NODE_UUID").getAsString();
+            APP_COMPANY_UUID = ee.getAsJsonObject().get("APP_COMPANY_UUID").getAsString();
+            System.out.println("APP_USER_NODE_UUID: " + APP_USER_NODE_UUID);
+            System.out.println("APP_COMPANY_UUID: "+APP_COMPANY_UUID);
+        }
+
+
+
+
+        SearchUserRequest suq = new SearchUserRequest(PRIVILEGED_APP_SSO_TOKEN,
+                                                        APP_USER_NODE_UUID,
+                                                        APP_COMPANY_UUID);
+//        System.out.println(gson.toJson(suq));
+        httpPost.setURI(new URI(IamConstants.IAM_SEARCH_UNIX_USER_URL));
+        StringEntity input3 = new StringEntity(gson.toJson(suq));
+        input3.setContentType("application/json");
+        httpPost.setEntity(input3);
+
+        response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println("ERROR: "+error_msg);
+            return;
+        }else {
+            APP_UNIX_USER_UUID = ee.getAsJsonObject().get("APP_UNIX_USER_UUID_LIST").getAsJsonArray().get(0).getAsString();
+            System.out.println("APP_UNIX_GROUP_UUID: "+APP_UNIX_USER_UUID);
+        }
+
+
+        GetUserRequest gur = new GetUserRequest(PRIVILEGED_APP_SSO_TOKEN, APP_UNIX_USER_UUID);
+//        System.out.println(gson.toJson(gur));
+        httpPost.setURI(new URI(IamConstants.IAM_GET_UNIX_USER_URL));
+        StringEntity input4 = new StringEntity(gson.toJson(gur));
+        input4.setContentType("application/json");
+        httpPost.setEntity(input4);
+
+        response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println("ERROR: "+error_msg);
+            return;
+        }else {
+            UNIX_USERNAME = ee.getAsJsonObject().get("APP_UNIX_USER_BASIC_PROFILE")
+                    .getAsJsonObject().get("UNIX_USERNAME").getAsString();
+            username[0] = UNIX_USERNAME;
+            UNIX_GID = ee.getAsJsonObject().get("APP_UNIX_USER_BASIC_PROFILE")
+                    .getAsJsonObject().get("UNIX_GID").getAsString();
+            System.out.println("UNIX_USERNAME: "+UNIX_USERNAME);
+            System.out.println("UNIX_GID: "+UNIX_GID);
+        }
+
+
+        SearchGroupRequest sgr = new SearchGroupRequest(PRIVILEGED_APP_SSO_TOKEN,UNIX_GID);
+//        System.out.println(gson.toJson(sgr));
+        httpPost.setURI(new URI(IamConstants.IAM_SEARCH_UNIX_GRP_URL));
+        StringEntity input5 = new StringEntity(gson.toJson(sgr));
+        input5.setContentType("application/json");
+        httpPost.setEntity(input5);
+
+        response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println("ERROR: "+error_msg);
+            return;
+        }else {
+            APP_UNIX_GROUP_UUID = ee.getAsJsonObject().get("APP_UNIX_GROUP_UUID_LIST").getAsJsonArray().get(0).getAsString();
+            System.out.println("APP_UNIX_GROUP_UUID: "+APP_UNIX_GROUP_UUID);
+        }
+
+
+        GetGroupRequest ggr = new GetGroupRequest(PRIVILEGED_APP_SSO_TOKEN,APP_UNIX_GROUP_UUID);
+//        System.out.println(gson.toJson(ggr));
+        httpPost.setURI(new URI(IamConstants.IAM_GET_UNIX_GRP_URL));
+        StringEntity input6 = new StringEntity(gson.toJson(ggr));
+        input6.setContentType("application/json");
+        httpPost.setEntity(input6);
+
+        response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println("ERROR: "+error_msg);
+            return;
+        }else {
+            APP_UNIX_GROUP_NAME = ee.getAsJsonObject().get("APP_UNIX_GROUP_BASIC_PROFILE").getAsJsonObject().get("APP_UNIX_GROUP_NAME").getAsString();
+            System.out.println("APP_UNIX_GROUP_NAME: "+APP_UNIX_GROUP_NAME);
+
+            Type listType = new TypeToken<List<String>>(){}.getType();
+            APP_UNIX_GROUP_MEMBER_LIST = gson.fromJson(ee.getAsJsonObject().get("APP_UNIX_GROUP_MEMBER_LIST"),listType);
+            for(String s:APP_UNIX_GROUP_MEMBER_LIST){
+                System.out.println(s);
+            }
+        }
+
+
+        GetUsersRequest gusr = new GetUsersRequest(PRIVILEGED_APP_SSO_TOKEN,APP_UNIX_GROUP_MEMBER_LIST);
+//        System.out.println(gson.toJson(gusr));
+        httpPost.setURI(new URI(IamConstants.IAM_GET_UNIX_USERS_URL));
+        StringEntity input7 = new StringEntity(gson.toJson(gusr));
+        input7.setContentType("application/json");
+        httpPost.setEntity(input7);
+
+        response = httpClient.execute(httpPost);
+
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + response.getStatusLine().getStatusCode());
+        }
+
+        ee = parser.parse(new InputStreamReader((response.getEntity().getContent())));
+        code = ee.getAsJsonObject().get("ERROR_CODE").getAsString();
+
+        if (!code.equals("0")){
+            error_msg = ee.getAsJsonObject().get("ERROR_MESSAGE").getAsString();
+            System.out.println("ERROR: "+error_msg);
+            return;
+        }else {
+
+            JsonArray types = ee.getAsJsonObject().get("APP_UNIX_USER_RESULT_LIST").getAsJsonArray();
+            for(JsonElement je : types){
+                String abc = je.getAsJsonObject().get("APP_UNIX_USER_BASIC_PROFILE").getAsJsonObject().get("UNIX_USERNAME").getAsString();
+                System.out.println(abc);
+            }
+
+        }
 
 
     }
