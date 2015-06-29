@@ -199,5 +199,8 @@ public class IamConstants {
     public static final String IAM_GET_UNIX_GRP_URL = IAM_HOST + IAM_GET_UNIX_GRP;
 
     public static final String MARKER="\\$\\@MARKER\\@\\$";
+    public static final String start_tag ="<option value=\"";
+    public static final String mid_tag = "\">";
+    public static final String end_tag = "</option>";
 
 }

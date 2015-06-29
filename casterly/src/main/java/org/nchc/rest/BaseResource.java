@@ -143,12 +143,18 @@ public class BaseResource {
             is.close();
         }
 
+        StringBuilder sb = new StringBuilder();
+        sb.append(IamConstants.start_tag+user+IamConstants.mid_tag+user+IamConstants.end_tag);
+
         if(members != null) {
             for(String s: members){
-                LOG.info(s);
+                sb.append(IamConstants.start_tag+s+IamConstants.mid_tag+s+IamConstants.end_tag);
             }
+            LOG.info(sb.toString());
         }
-        return template.replaceAll(IamConstants.MARKER, user);
+
+
+        return template.replaceAll(IamConstants.MARKER, sb.toString());
     }
 
     private String getLoginNameByCookie(String cookie)
