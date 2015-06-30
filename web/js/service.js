@@ -14,7 +14,8 @@ $(document).ready(function() {
     // timepicker
     $(".datetime_selector").datetimepicker().button();
     // input user
-    //$(".user_input").button();
+    $(".user_input").button();
+    $(".user_input_box").selectmenu();
     //buttom
     $(".query_button").button();
 

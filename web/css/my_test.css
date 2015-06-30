@@ -12,22 +12,22 @@ width: 238px;
 
 #startdatetimepicker1{
     position: relative;
-     z-index: 100000;
+     /*z-index: 100000;*/
  }
 
 #enddatetimepicker{
  position: relative;
- z-index: 100000;
+ /*z-index: 100000;*/
  }
 
 #jobst{
  position: relative;
- z-index: 100000;
+ /*z-index: 100000;*/
  }
 
 #jobet{
  position: relative;
- z-index: 100000;
+ /*z-index: 100000;*/
  }
 
 .clear {

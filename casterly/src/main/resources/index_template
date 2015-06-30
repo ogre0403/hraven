@@ -31,7 +31,7 @@
 
 	<div id="plot1">
 		<div id="query" class="left">
-			<select id ="user" class="user_input">$@MARKER@$</select>
+			<select id ="user" class="user_input_box">$@MARKER@$</select>
 			<!--<input id ="user" class="user_input" type="text"  readonly="readonly" value="$@MARKER@$" />-->
 			</p>
 			<input id="startdatetimepicker1" class="datetime_selector" type="text" value="-- Start FINISH Time --"/>
@@ -54,7 +54,7 @@
 
 	<div id="plot2">
 		<div id="queryJob" class="left">
-		    <select id ="jobuser" class="user_input">$@MARKER@$</select>
+		    <select id ="jobuser" class="user_input_box">$@MARKER@$</select>
 			<!--<input id ="jobuser" class="user_input" type="text"  readonly="readonly" value="$@MARKER@$" />-->
 			</p>
 			<input id="jobst" class="datetime_selector" type="text" value="-- Start SUBMIT Time --"/>
@@ -79,7 +79,7 @@
 
 	<div id="jobdetail">
 		<div id="query3" class="left">
-		    <select id ="user3" class="user_input">$@MARKER@$</select>
+		    <select id ="user3" class="user_input_box">$@MARKER@$</select>
 			<!--<input id ="user3" class="user_input"  type="text"  readonly="readonly" value="$@MARKER@$" />-->
 			</p>
 			<select id="joblist">
@@ -124,7 +124,7 @@
 
 	<div id="running">
 		<div class="left">
-		    <select id= "runningusername" class="user_input">$@MARKER@$</select>
+		    <select id= "runningusername" class="user_input_box">$@MARKER@$</select>
 			<!--<input id= "runningusername" class="user_input"  type="text"  readonly="readonly" value="$@MARKER@$" />-->
 			</p>
 			<select id="runningjoblist">
