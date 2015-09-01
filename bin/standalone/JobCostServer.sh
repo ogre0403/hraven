@@ -57,7 +57,9 @@ case $startStop in
 
     hadoop_rotate_log $log
     echo starting and logging to $log
-    nohup java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Casterly -d > $log 2>&1 &
+#    nohup java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Casterly -d > $log 2>&1 &
+#    java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.spark.SparkCostServer
+    java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.RestServer
     echo $! > $pidfile
     ;;
 

@@ -35,7 +35,7 @@ public class TestRealData {
     @BeforeClass
     public static void setupBeforeClass() throws IOException {
         HBASE_CONF.set("hbase.zookeeper.quorum","192.168.56.201");
-        table = new HTable(HBASE_CONF,"job_history");
+//        table = new HTable(HBASE_CONF,"job_history");
 //        table = new HTable(HBASE_CONF,"test2");
     }
 
@@ -52,7 +52,7 @@ public class TestRealData {
     @Ignore
     public void testfromTsSortedBytes() throws IOException {
         QueryJobService qser = new QueryJobService(HBASE_CONF);
-        List<JobDetails> jj = qser.getAllJobInTimeInterval("NCHC","hdadm",false);
+//        List<JobDetails> jj = qser.getAllJobInTimeInterval("NCHC","hdadm",false);
         qser.close();
     }
 
@@ -115,8 +115,8 @@ public class TestRealData {
 
     @Ignore
     public void testHttpServer() throws Exception {
-        RestServer server = new RestServer("0.0.0.0", 8080);
-        server.startUp();
+//        RestServer server = new RestServer("0.0.0.0", 8080);
+//        server.startUp();
 //        Thread.sleep(100000000);
     }
 
@@ -138,15 +138,21 @@ public class TestRealData {
         }
     }
 
-    @Test
+    @Ignore
     public void testQueryRunningStatus() throws Exception{
         QueryJobService qq = new QueryJobService(HBASE_CONF);
         RunningStatusDAO rs = qq.getRunningJobStatus("application_1419570118547_0010");
         System.out.println(rs);
     }
 
+    @Test
+    public void testA(){
+        System.out.println("aaa");
+    }
+
+
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        table.close();
+//        table.close();
     }
 }

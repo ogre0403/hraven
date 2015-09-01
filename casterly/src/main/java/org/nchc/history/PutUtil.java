@@ -15,6 +15,8 @@ import org.nchc.extend.ExtendJobKeyConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -68,6 +70,30 @@ public class PutUtil {
         raw.add(Constants.RAW_FAM_BYTES, rawColumn, rawBytes);
         raw.add(Constants.INFO_FAM_BYTES, lastModificationColumn,
                 rawLastModifiedMillis);
+        puts.add(raw);
+    }
+
+    public static void addFilePathPut(List<Put> puts, byte[] rowKey,
+                                      byte[] pathColumn,
+                                      byte[] lastModificationColumn,
+                                      byte[] filenameColumn,
+                                      String filename,
+                                      FileStatus fileStatus){
+
+        Put raw = new Put(rowKey);
+        URI uu = null;
+        try {
+             uu = new URI(fileStatus.getPath().toString());
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        byte[] pathBytes = Bytes.toBytes(uu.getPath());
+        byte[] rawLastModifiedMillis = Bytes.toBytes(fileStatus.getModificationTime());
+        byte[] filenameByte = Bytes.toBytes(filename);
+
+        raw.add(Constants.INFO_FAM_BYTES, filenameColumn, filenameByte);
+        raw.add(Constants.INFO_FAM_BYTES, pathColumn, pathBytes);
+        raw.add(Constants.INFO_FAM_BYTES, lastModificationColumn,rawLastModifiedMillis);
         puts.add(raw);
     }
 

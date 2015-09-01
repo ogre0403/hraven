@@ -20,15 +20,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
-import org.apache.commons.cli.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.ContextHandlerCollection;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
@@ -37,20 +33,17 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.thread.QueuedThreadPool;
 import org.nchc.extend.ExtendConstants;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
  * Simple REST server that spawns an embedded Jetty instance to service requests
+ *
  * @deprecated in favor of {@link com.twitter.hraven.rest.HravenRestServer}
  */
 public class RestServer extends AbstractIdleService {
+
   private static final int DEFAULT_PORT = 8080;
   private static final int DEFAULT_SSL_PORT = 443;
   private static final String DEFAULT_ADDRESS = "0.0.0.0";
@@ -81,6 +74,30 @@ public class RestServer extends AbstractIdleService {
       LOG.info("rest.port: " + this.port);
       LOG.info("rest.ssl.port: " + this.sslport);
   }
+
+
+    public static void main(String[] args) throws Exception {
+
+        LOG.info("Start TEST http server");
+        RestServer rs = new RestServer(DEFAULT_ADDRESS, DEFAULT_PORT, 8443);
+        rs.startUp();
+        LOG.info("End TEST http server");
+
+    }
+
+
+
+
+    public RestServer(String address, int port, int sslport) {
+        this.address = address;
+        this.port = port;
+        this.sslport = sslport;
+        ExtendConstants.isHttpEnable = true;
+        ExtendConstants.isAuthEnable = false;
+
+    }
+
+
     @Override
     protected void startUp() throws Exception {
         server = new Server();
@@ -95,17 +112,17 @@ public class RestServer extends AbstractIdleService {
 
         // sset SSL
         String keystroefile = RestServer.class.getClass().getResource("/keystore").toString();
-        SslSocketConnector https_connector=new SslSocketConnector();
+        SslSocketConnector https_connector = new SslSocketConnector();
         https_connector.setHost(this.address);
         https_connector.setKeystoreType("JKS");
         https_connector.setPort(this.sslport);
         https_connector.setKeystore(keystroefile);
         https_connector.setPassword("123456");
         https_connector.setKeyPassword("123456");
-        server.setConnectors(new Connector[] {https_connector});
+        server.setConnectors(new Connector[]{https_connector});
 
         // set non-http
-        if(ExtendConstants.isHttpEnable == true) {
+        if (ExtendConstants.isHttpEnable == true) {
             Connector http_connector = new SelectChannelConnector();
             http_connector.setPort(this.port);
             http_connector.setHost(this.address);
@@ -115,10 +132,10 @@ public class RestServer extends AbstractIdleService {
 
         // static html context, use to get css and js under WEBROOT_INDEX
         String jarpath = RestServer.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        LOG.info("jarpath = "+jarpath);
+        LOG.info("jarpath = " + jarpath);
         Path p1 = Paths.get(jarpath);
         Path p2 = p1.getParent().getParent().resolve(WEBROOT_INDEX);
-        LOG.info("web root = "+p2.toUri().toASCIIString());
+        LOG.info("web root = " + p2.toUri().toASCIIString());
         WebAppContext wc = new WebAppContext();
         wc.setResourceBase(p2.toUri().toASCIIString());
         wc.setContextPath("/resource");
@@ -131,29 +148,29 @@ public class RestServer extends AbstractIdleService {
         context.addServlet(sh, "/*");
 
         //add web and restful context
-        server.setHandlers(new Handler[]{wc,context});
+        server.setHandlers(new Handler[]{wc, context});
         // start server
         server.start();
     }
 
-    private void setSuperUser(Properties ps){
-        if(ps.containsKey("rest.superuser")){
+    private void setSuperUser(Properties ps) {
+        if (ps.containsKey("rest.superuser")) {
             ExtendConstants.SUPERUSER = ps.getProperty("rest.superuser");
         }
-        LOG.info("rest.superuser: "+ExtendConstants.SUPERUSER);
+        LOG.info("rest.superuser: " + ExtendConstants.SUPERUSER);
     }
 
-    private void enableHttp(Properties ps){
-        if(ps.containsKey("rest.http") &&
-                ps.getProperty("rest.http").equals("enable")){
+    private void enableHttp(Properties ps) {
+        if (ps.containsKey("rest.http") &&
+                ps.getProperty("rest.http").equals("enable")) {
             ExtendConstants.isHttpEnable = true;
         }
-        LOG.info("rest.superuser: "+ExtendConstants.isHttpEnable);
+        LOG.info("rest.http: " + ExtendConstants.isHttpEnable);
     }
 
-    private void enableAuth(Properties ps){
-        if(ps.containsKey("rest.auth") &&
-                ps.getProperty("rest.auth").equals("enable")){
+    private void enableAuth(Properties ps) {
+        if (ps.containsKey("rest.auth") &&
+                ps.getProperty("rest.auth").equals("enable")) {
             ExtendConstants.isAuthEnable = true;
         }
         LOG.info("rest.auth:" + ExtendConstants.isAuthEnable);

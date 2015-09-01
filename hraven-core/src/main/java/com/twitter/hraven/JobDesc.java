@@ -84,7 +84,7 @@ public class JobDesc {
         framework);
   }
 
-  JobDesc(QualifiedJobId jobId, String user, String appId, String version,
+  public JobDesc(QualifiedJobId jobId, String user, String appId, String version,
           long runId, Framework framework) {
     this.jobId = jobId;
     this.userName = (null == user) ? Constants.UNKNOWN : user.trim();

@@ -51,25 +51,26 @@ public class ExtendJobHistoryService extends JobHistoryService {
         jobputbyTS.add(ExtendConstants.INFO_FAM_BYTES, ExtendConstants.FRAMEWORK_COLUMN_BYTES,
                 Bytes.toBytes(jobDesc_w_finishT.getFramework().toString()));
 
+        if(jobConf !=null) {
         // Avoid doing string to byte conversion inside loop.
-        byte[] jobConfColumnPrefix = Bytes.toBytes(ExtendConstants.JOB_CONF_COLUMN_PREFIX
+            byte[] jobConfColumnPrefix = Bytes.toBytes(ExtendConstants.JOB_CONF_COLUMN_PREFIX
                 + ExtendConstants.SEP);
 
         // Create puts for all the parameters in the job configuration
-        Iterator<Map.Entry<String, String>> jobConfIterator = jobConf.iterator();
-        while (jobConfIterator.hasNext()) {
-            Map.Entry<String, String> entry = jobConfIterator.next();
-            // Prefix the job conf entry column with an indicator to
-            byte[] column = Bytes.add(jobConfColumnPrefix,
-                    Bytes.toBytes(entry.getKey()));
-            jobPut.add(ExtendConstants.INFO_FAM_BYTES, column, Bytes.toBytes(entry.getValue()));
-            jobputbyTS.add(ExtendConstants.INFO_FAM_BYTES, column, Bytes.toBytes(entry.getValue()));
+            Iterator<Map.Entry<String, String>> jobConfIterator = jobConf.iterator();
+            while (jobConfIterator.hasNext()) {
+                Map.Entry<String, String> entry = jobConfIterator.next();
+                // Prefix the job conf entry column with an indicator to
+                byte[] column = Bytes.add(jobConfColumnPrefix,
+                        Bytes.toBytes(entry.getKey()));
+                jobPut.add(ExtendConstants.INFO_FAM_BYTES, column, Bytes.toBytes(entry.getValue()));
+                jobputbyTS.add(ExtendConstants.INFO_FAM_BYTES, column, Bytes.toBytes(entry.getValue()));
+            }
+
+            // ensure pool/queuename is set correctly
+            setHravenQueueNamePut(jobConf, jobPut, jobKey, jobConfColumnPrefix);
+            setHravenQueueNamePut(jobConf, jobputbyTS, jobKeyTS, jobConfColumnPrefix);
         }
-
-        // ensure pool/queuename is set correctly
-        setHravenQueueNamePut(jobConf, jobPut, jobKey, jobConfColumnPrefix);
-        setHravenQueueNamePut(jobConf, jobputbyTS, jobKeyTS, jobConfColumnPrefix);
-
         puts.add(jobPut);
         puts.add(jobputbyTS);
         return puts;
