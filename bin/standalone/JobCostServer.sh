@@ -8,7 +8,7 @@ myscriptname=$(basename "$0" .sh)
 pidfile=$HRAVEN_PID_DIR/$myscriptname.pid
 
 JAVA_OPTS=" -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true "
-
+JAVA_CMD=`which java`
 hadoop_rotate_log ()
 {
   log=$1;
@@ -57,7 +57,7 @@ case $startStop in
 
     hadoop_rotate_log $log
     echo starting and logging to $log
-    nohup java $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Casterly -d > $log 2>&1 &
+    nohup $JAVA_CMD $JAVA_OPTS -cp $HRAVEN_HOME/conf/:$CLASSPATH org.nchc.history.Casterly -d > $log 2>&1 &
     echo $! > $pidfile
     ;;
 
