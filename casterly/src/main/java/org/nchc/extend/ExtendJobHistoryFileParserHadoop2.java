@@ -809,12 +809,8 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         long memoryMb = 0L;
         if (ExtendConstants.MAP_MEMORY_MB_CONF_KEY.equals(key)){
             memoryMb =  this.jobConf.getLong(key, ExtendConstants.DEFAULT_MAP_MEMORY_MB);
-        }else if (ExtendConstants.REDUCE_MEMORY_MB_CONF_KEY.equals(key)){
+        }else if(ExtendConstants.REDUCE_MEMORY_MB_CONF_KEY.equals(key)){
             memoryMb = this.jobConf.getLong(key, ExtendConstants.DEFAULT_REDUCE_MEMORY_MB);
-        }
-        if (memoryMb == 0L) {
-            throw new ProcessingException(
-                    "While correcting slot millis, " + key + " was found to be 0 ");
         }
         return memoryMb;
     }
@@ -843,12 +839,22 @@ public class ExtendJobHistoryFileParserHadoop2 extends JobHistoryFileParserBase 
         if (ExtendConstants.SLOTS_MILLIS_MAPS.equals(counterName)) {
             key = ExtendConstants.MAP_MEMORY_MB_CONF_KEY;
             memoryMb = getMemoryMb(key);
-            updatedCounterValue = counterValue * yarnSchedulerMinMB / memoryMb;
+            if(memoryMb != 0) {
+                updatedCounterValue = counterValue * yarnSchedulerMinMB / memoryMb;
+            }else {
+                LOG.warn("While correcting slot millis, " + key + " was found to be 0, NOT modified");
+                updatedCounterValue = counterValue;
+            }
             this.mapSlotMillis = updatedCounterValue;
         } else {
             key = ExtendConstants.REDUCE_MEMORY_MB_CONF_KEY;
             memoryMb = getMemoryMb(key);
-            updatedCounterValue = counterValue * yarnSchedulerMinMB / memoryMb;
+            if(memoryMb != 0) {
+                updatedCounterValue = counterValue * yarnSchedulerMinMB / memoryMb;
+            }else{
+                LOG.warn("While correcting slot millis, " + key + " was found to be 0, NOT modified");
+                updatedCounterValue = counterValue;
+            }
             this.reduceSlotMillis = updatedCounterValue;
         }
 
